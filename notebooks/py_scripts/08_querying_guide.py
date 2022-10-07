@@ -1,27 +1,20 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py
 #     text_representation:
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.1
+#       jupytext_version: 1.13.7
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
 
-# # Scanning Session Ingestion
+# # Querying Guide
 
-# ## Setup
-
-# ### Connect to the database
-
-# If you are don't have your login information, contact the administrator.
-#
-# Using local config file (see [01_pipeline](./01_pipeline.ipynb)):
+# Database access with config file:
 
 # +
 import os
@@ -39,7 +32,7 @@ sub, lab, protocol, line, mutation, user, project, subject_genotype, subject_dea
     subject.SubjectDeath())
 # -
 
-# Manual entry:
+# Manual entry database access:
 
 # +
 # Manual Entry
@@ -58,34 +51,6 @@ sub, lab, protocol, line, mutation, user, project, subject_genotype, subject_dea
     subject.SubjectDeath())
 # -
 
-# ## Ingesting scan
-
-# Ingest all scans associated with a given session ID.
-
-scan.ScanPath()
-
-isess.ingest_session_scan('sess9FB2LN5C', verbose=True)
-
-session.Session * session.SessionDirectory
-
-key='scan9FB2LN5C'
-(scan.Scan & f'scan_id=\"{key}\"')
-
-scan.ScanInfo.populate()
-
-# ##### Some placeholders for equipment and location during development
-
-scan.ScanInfo()
-
-scan.ScanInfo.Field()
-
-# Note the relative path below:
-
-#temporary step - insert placeholder values
-equipment_placeholder = "Equipment"
-location_placeholder = "Location"
-from adamacs.pipeline import Equipment, Location
-Equipment.insert1({'scanner' : equipment_placeholder}, skip_duplicates=True)
-Location.insert1({'anatomical_location': location_placeholder}, skip_duplicates=True) 
+# ### Get all Sessions and Scans of an Animal
 
 
