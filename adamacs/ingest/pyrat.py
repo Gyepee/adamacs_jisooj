@@ -224,7 +224,7 @@ class PyratIngestion:
 def restrict_by(payload, pkey, dest_table=None, tkey=None):
     """
     1. Restrict the list of dicts payload by unique instances of a payload key
-    2. Remove items where payload key is already in the tkey value of the dest_table
+    2. Remove items where payload key is already in the key value of the dest_table
     """
     unique_payload = list({v[pkey]: v for v in payload if v[pkey] is not None}.values())
     if dest_table:
