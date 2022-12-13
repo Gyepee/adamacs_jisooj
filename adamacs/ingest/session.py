@@ -52,7 +52,7 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
         scan_keys[idx] = k[0]
 
     # Find the animal ID by position
-    subjects = [x.split('_')[2] for x in basenames] #TR22: changed to second split - it was extracting the User Names - not AnimalIDs (=subjects)
+    subjects = [x.split('_')[1] for x in basenames]
 
     if not all_equal(subjects):
         raise ValueError("Scans from multiple animals found. Must be 1 animal.")
@@ -61,7 +61,9 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
         raise ValueError(f'Subject {subject_id} must be added before this session.')
 
     # Find the user ID by position
-    # CB NOTE: Will future data folders match user_id int values from pyrat ingestion?
+    # CB NOTE: Will future data folders match user_id int values from pyrat ingestion? 
+    # TR NOTE: Actually, no. The pyrat ingestion users are not going to be the real users of the animals. These are Laura and myself. We are the "owners" of the animals. So this has to be separate, also for the pyrat ingest. I suggest to call the pyrat ingest from a specdific user ID - and have the very monolithic user table generated once.
+
     user_keys = [x.split('_')[0] for x in basenames]
     if not all_equal(user_keys):
         raise ValueError("Scans from multiple users found. Must be 1 user.")
