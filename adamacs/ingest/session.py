@@ -32,7 +32,7 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
     valid_paths = [p for p in paths if p.is_dir()]
     match_paths = []
     for p in valid_paths:
-        match_paths.extend(list(p.rglob(f'*{session_key}*')))
+        match_paths.extend(list(p.rglob(f'*{session_key}*'))) #TR: added Tiff extention here.
     
     n_scans = len(match_paths)
     if verbose:
@@ -96,7 +96,7 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
 
     # Insert each scan
     for idx, s in enumerate(scan_keys):
-        equipment_placeholder = "Equipment"  # TODO: Resolve how to extract equipment
+        equipment_placeholder = "Equipment"  # TODO: Resolve how to extract equipment %TR: extract from userfunction header injection
         software_placeholder = "ScanImage"
         location_placeholder = "Location"
         path = find_full_path(root_paths, scan_basenames[idx])
