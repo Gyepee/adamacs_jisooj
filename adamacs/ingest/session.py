@@ -52,7 +52,7 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
         scan_keys[idx] = k[0]
 
     # Find the animal ID by position
-    subjects = [x.split('_')[1] for x in basenames]
+    subjects = [x.split('_')[2] for x in basenames] #TR22: changed to second split - it was extracting the User Names - not AnimalIDs (=subjects)
 
     if not all_equal(subjects):
         raise ValueError("Scans from multiple animals found. Must be 1 animal.")
