@@ -98,14 +98,26 @@ class PyratIngestion:
                                      'generation', 'parents', 'licence_number',
                                      'licence_title', 'owner_fullname',
                                      'responsible_fullname'],
-                            'eartag': SubjectID}
+                            'eartag': SubjectID,
+                            'state' : 'live'} #TR:  default is 'Live'
         payload = json.loads(requests.get(url+'animals', auth=auth,
                                           params=requested_params
                                           ).content)
 
         if not payload: # If no entries, exit
-            print(f'Found no entries for {SubjectID}')
-            return
+            print(f'Found no live entries for {SubjectID}. Testing sacrificed.') #TR: added to include search of sacrificed animals 
+            requested_params = {'_key': ['eartag_or_id', 'labid', 'sex', 'dateborn',
+                                'strain_id', 'strain_name', 'mutations',
+                                'generation', 'parents', 'licence_number',
+                                'licence_title', 'owner_fullname',
+                                'responsible_fullname'],
+                    'eartag': SubjectID,
+                    'state' : 'sacrificed'} #TR:  default is 'Live'
+            payload = json.loads(requests.get(url+'animals', auth=auth,
+                            params=requested_params
+                            ).content)
+            if not payload: # If still no entries, exit
+                return
 
         print('Gathering users...')
         user_list = [{'user_id': 0, 'name': 'default_id'}]
