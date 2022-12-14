@@ -24,7 +24,9 @@ class User(dj.Lookup):
     user_id        : int
     ---
     name           : varchar(32)
+    shorthand=''   : varchar(32) # TR: added name_FirstInitialSurname shorthand
     initials=''    : varchar(2)  # Update after pyrat ingestion
+    email=''       : varchar(32) # TR: for completeness' sake also email    
     -> [nullable] Lab
     """
 
