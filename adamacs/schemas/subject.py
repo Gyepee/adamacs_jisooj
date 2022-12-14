@@ -84,6 +84,7 @@ class Subject(dj.Manual):
     earmark                 : varchar(16)     #
     sex                     : enum('M', 'F', 'U')  # Geschlecht
     birth_date              : varchar(32)          # Geb.
+    death_date = null       : varchar(32)          # Gest.
     generation=''           : varchar(64)     # Generation (F2 in example sheet)
     parent_ids              : tinyblob        # dict of parent_sex: parent_eartag
     -> User.proj(owner_id='user_id')          # Besitzer

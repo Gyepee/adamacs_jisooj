@@ -93,7 +93,7 @@ class PyratIngestion:
 
 
         """
-        requested_params = {'_key': ['eartag_or_id', 'labid', 'sex', 'dateborn',
+        requested_params = {'_key': ['eartag_or_id', 'labid', 'sex', 'dateborn', 'datesacrificed', #TR: added 'datesacrificed',
                                      'strain_id', 'strain_name', 'mutations',
                                      'generation', 'parents', 'licence_number',
                                      'licence_title', 'owner_fullname',
@@ -106,7 +106,7 @@ class PyratIngestion:
 
         if not payload: # If no entries, exit
             print(f'Found no live entries for {SubjectID}. Testing sacrificed.') #TR: added to include search of sacrificed animals 
-            requested_params = {'_key': ['eartag_or_id', 'labid', 'sex', 'dateborn',
+            requested_params = {'_key': ['eartag_or_id', 'labid', 'sex', 'dateborn', 'datesacrificed',
                                 'strain_id', 'strain_name', 'mutations',
                                 'generation', 'parents', 'licence_number',
                                 'licence_title', 'owner_fullname',
@@ -136,6 +136,10 @@ class PyratIngestion:
             user_list.append({'user_id': responsible_id,
                               'name': resp['responsible_fullname']})
         user_list = [d for d in user_list if d['user_id'] != 0]  # removing default
+
+        # I simply overwrite IDss here. We do not want to have the pyrat ids entered into the subject.User table and owner/responsible will always be me and Laura
+        owner_id = 1 #TR: default owner is Tobias Rose
+        responsible_id = 2 #TR: default responsible person is Laura Kueck
 
         print('Gathering protocols...')
         protocol_list = []
@@ -181,6 +185,7 @@ class PyratIngestion:
                                  'earmark': animal['labid'],
                                  'sex': animal['sex'],
                                  'birth_date': animal['dateborn'] or None,
+                                 'death_date': animal['datesacrificed'] or None, #TR:
                                  'generation': animal['generation'] or None,
                                  'parent_ids': parent_ids or None,
                                  'owner_id': owner_id,
@@ -208,7 +213,7 @@ class PyratIngestion:
 
         with subject.Subject.connection.transaction:
             # --- Inserts ---
-            subject.User.insert(user_list)
+            # subject.User.insert(user_list) TR:owner and responsible are not needed. Also: Different in scope from Userlist
             subject.Protocol.insert(protocol_list)
             subject.Line.insert(line_list)
             subject.Mutation.insert(mutation_list)
@@ -241,6 +246,7 @@ def restrict_by(payload, pkey, dest_table=None, tkey=None):
     unique_payload = list({v[pkey]: v for v in payload if v[pkey] is not None}.values())
     if dest_table:
         existing_ids = dest_table.fetch(tkey).tolist()
-        return [d for d in unique_payload if d[pkey] not in existing_ids]
+        return [d for d in unique_payload if d[pkey] not in existing_ids] #TR: returns unique names NOT in Usubject.User table
     else:
         return unique_payload
+
