@@ -96,7 +96,7 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
 
     # Insert each scan
     for idx, s in enumerate(scan_keys):
-        equipment_placeholder = "Equipment"  # TODO: Resolve how to extract equipment %TR: extract from userfunction header injection
+        equipment_placeholder = "Equipment"  # TODO: Resolve how to extract equipment %TR: extract from userfunction header at setup
         software_placeholder = "ScanImage"
         location_placeholder = "Location"
         path = find_full_path(root_paths, scan_basenames[idx])
