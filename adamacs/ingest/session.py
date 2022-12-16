@@ -67,8 +67,10 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
     user_keys = [x.split('_')[0] for x in basenames]
     if not all_equal(user_keys):
         raise ValueError("Scans from multiple users found. Must be 1 user.")
-    user_placeholder = 1
-    user = user_placeholder  # previously: user_keys[0]
+    query = (subject.User & f'initials=\"{user_keys[0]}\"') #TR: now taking user ID from dir name
+    user = query.fetch('user_id')[0]
+    # user_placeholder = 1
+    # user = user_placeholder  # previously: user_keys[0]
 
     dates = [x.split('_')[2] for x in basenames]
     if not all_equal(dates):
