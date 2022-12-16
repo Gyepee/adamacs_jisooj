@@ -70,12 +70,15 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
     query = (subject.User & f'initials=\"{user_keys[0]}\"') #TR: now taking user ID from dir name
     user = query.fetch('user_id')[0]
 
-
     dates = [x.split('_')[2] for x in basenames]
     if not all_equal(dates):
         raise ValueError("Found different dates for session. Must be on same date.")
     date = dates[0]
     
+    
+    default_project_id = "TEC"
+    session.ProjectSession.insert1((default_project_id, session_key)) #TR: has to match project table (shorthand - NOT description)
+
     try:
         session.Session.insert1((session_key, subject_id, date))
     except DuplicateError:
