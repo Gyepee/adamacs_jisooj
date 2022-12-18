@@ -75,7 +75,7 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
         raise ValueError("Found different dates for session. Must be on same date.")
     date = dates[0]
     
-    
+      
     default_project_id = "TEC"
     session.ProjectSession.insert1((default_project_id, session_key)) #TR: has to match project table (shorthand - NOT description)
 
