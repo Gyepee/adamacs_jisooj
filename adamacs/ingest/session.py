@@ -76,15 +76,17 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
     date = dates[0]
     
       
-    default_project_id = "TEC"
-    session.ProjectSession.insert1((default_project_id, session_key)) #TR: has to match project table (shorthand - NOT description)
 
     try:
         session.Session.insert1((session_key, subject_id, date))
     except DuplicateError:
         warnings.warn(f'\nSkipped existing session row: {session_key, subject, date}',
                       stacklevel=2)
-    
+
+    default_project_id = "TEC"
+    session.ProjectSession.insert1((default_project_id, session_key)) #TR: has to match project table (shorthand - NOT description)
+
+
     # CB NOTE: I think this should be modified to store the relative path
     try:
         session.SessionDirectory.insert1((session_key, match_paths[0], user))
