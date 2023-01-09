@@ -15,6 +15,9 @@ import re
 import pdb
 
 
+# TODO 
+# 1. For each 
+
 def demultiplex(auxdata, channels=5):
     """Demultiplex the digital data"""
     auxdata = auxdata.flatten()
@@ -125,7 +128,13 @@ def ingest_aux(session_key, root_paths=get_imaging_root_data_dir(),
         ts_bpod_reward = get_timestamps(bpod_reward1_chan, sr)
         ts_bpod_tone = get_timestamps(bpod_tone_chan, sr)
         
-        # Insert timestamps into tables
+        # Insert timestamps into tables 
+        # - TR23: Why not define event type headers here?
+        # event_type_headers = ['main_track_gate', 'shutter', 'mini2p_frames', 'mini2p_lines', 'mini2p_volumes', 'aux_bpod_cam',
+        #       'aux_bpod_visual', 'aux_bpod_reward', 'aux_bpod_tone']
+        # for e in event_type_headers:
+        #    event.EventType.insert1({'event_type_headers': e, 'event_type_description': ''}, skip_duplicates=True,)
+
         event_types = {
             'main_track_gate': ts_main_track_gate_chan,
             'shutter': ts_shutter_chan,
@@ -141,3 +150,5 @@ def ingest_aux(session_key, root_paths=get_imaging_root_data_dir(),
         for event_type, timestamps in event_types.items():
             to_insert = prepare_timestamps(timestamps, session_key, event_type)
             event.Event.insert(to_insert, skip_duplicates=True, allow_direct_insert=True)
+        
+        
