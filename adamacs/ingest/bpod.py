@@ -277,13 +277,13 @@ class Trial(object):
                 "cue": self._states.get("CueDelay", [None])[0],
                 "at_target": self._resp_delay[0] if self._resp_delay[0] else None,
                 "at_port": self._time_to_port,
-                # "reward": (
-                #     # NOTE: Now taking reward events from Aux
-                #     self._time_to_port
-                #     + self._session_data["TrialSettings"][0]["GUI"]["RewardDelay"]
-                #     if self._time_to_port
-                #     else None
-                # ),
+                "reward": (
+                    # NOTE: Now taking reward events from Aux - TR23: uncommented block to prevent foreign key constraint error
+                    self._time_to_port
+                    + self._session_data["TrialSettings"][0]["GUI"]["RewardDelay"]
+                    if self._time_to_port
+                    else None
+                ),
                 **self._ports_in,
                 "drinking": self._states.get("Drinking", [None])[0],
             }
