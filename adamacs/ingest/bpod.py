@@ -55,6 +55,7 @@ class Bpodfile(object):
     def _aux_timestamps(self):
         aux_paths = list(self._bpod_path_full.parent.glob("*h5"))
         assert len(aux_paths) == 1, f"Found more than one Aux h5 file\n{aux_paths}"
+        print(aux_paths[0])
         aux = Auxfile(aux_paths[0])
         aux_onset = aux.main_track_gate  # master trigger
         aux_trials = aux.bpod_channels["trial"] - aux_onset  # trial times wrt trigger
