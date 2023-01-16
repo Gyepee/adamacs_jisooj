@@ -18,5 +18,6 @@ calcium imaging Element:
 3. Enter the adamacs directory that was created with `cd adamacs`
 4. Create an environment called `datajoint` with `conda create --name datajoint python=3.8 `
 5. Activate the newly created environemnt with `conda activate datajoint`
+6. Install the latest datajoint with dependencies with `conda install -c conda-forge datajoint`
 5. Install adamacs with `pip install .`
 6. To get started right away open `jupyter notebook` and open a notebook you want to use.
