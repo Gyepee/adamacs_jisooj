@@ -6,7 +6,7 @@ requests
 matplotlib
 graphviz
 ruamel.yaml
-suite2p
+# suite2p @ git+https://github.com/SFB1089/suite2p@master
 # rspace-client==1.6.0
 # element-deeplabcut already requires element-interface
 # element-interface @ git+https://github.com/datajoint/element-interface.git@main
