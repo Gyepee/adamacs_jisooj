@@ -62,7 +62,7 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
 
     # Find the user ID by position
     # CB NOTE: Will future data folders match user_id int values from pyrat ingestion? 
-    # TR NOTE: Actually, no. The pyrat ingestion users are not going to be the real users of the animals. These are Laura and myself. We are the "owners" of the animals. So this has to be separate, also for the pyrat ingest. I suggest to call the pyrat ingest from a specdific user ID - and have the very monolithic user table generated once.
+    # TR NOTE: Actually, no. The pyrat ingestion users are not going to be the real users of the animals. These are Laura and myself. We are the "owners" of the animals. So this has to be separate, also for the pyrat ingest. I suggest to call the pyrat ingest from a specific user ID - and have the very monolithic user table generated once.
 
     user_keys = [x.split('_')[0] for x in basenames]
     if not all_equal(user_keys):
