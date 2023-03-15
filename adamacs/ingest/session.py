@@ -6,6 +6,7 @@ from ..pipeline import subject, session, scan
 from ..paths import get_imaging_root_data_dir
 from datajoint.errors import DuplicateError
 from element_interface.utils import find_full_path
+from adamacs.ingest.pyrat import PyratIngestion
 
 """ Notes from Chris
 1. I placed previous default (r'C:\\datajoint') as the default for
@@ -58,7 +59,9 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
         raise ValueError("Scans from multiple animals found. Must be 1 animal.")
     subject_id = subjects[0]
     if not (subject.Subject & f'subject=\"{subject_id}\"'):
-        raise ValueError(f'Subject {subject_id} must be added before this session.')
+        # raise ValueError(f'Subject {subject_id} must be added before this session.')
+        print(f'Subject {subject_id} will be added to ingest this session.')
+        PyratIngestion().ingest_animal(subject_id, prompt=False)
 
     # Find the user ID by position
     # CB NOTE: Will future data folders match user_id int values from pyrat ingestion? 
