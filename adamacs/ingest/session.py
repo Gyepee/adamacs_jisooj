@@ -106,11 +106,11 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
         warnings.warn(f'\nSkipped existing SessionUser row: {session_key, user}',
                       stacklevel=2)
 
-    # Insert each scan
+    # Insert each scan %TR: Why is that not inherited from Session??
     for idx, s in enumerate(scan_keys):
-        equipment_placeholder = "mini2p1"  # TODO: Resolve how to extract equipment %TR: extract from userfunction header at setup
+        equipment_placeholder = "dummy"  # TODO: Inherit From Session!
         software_placeholder = "ScanImage"
-        location_placeholder = "RSCa"
+        location_placeholder = "dummy"
         path = find_full_path(root_paths, scan_basenames[idx])
         try:
             scan.Scan.insert1((session_key, s, equipment_placeholder,
