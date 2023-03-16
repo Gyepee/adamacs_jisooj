@@ -17,8 +17,7 @@ from adamacs.ingest.pyrat import PyratIngestion
 """
 
 
-def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
-                        verbose=False):
+def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(), project_key='dummy', equipment_key='dummy', location_key='dummy', software_key='ScanImage', verbose=False):
     """Locate all directories in session_path that are part
     of the sesssion. Extract the following attributes from
     the directory names:
@@ -86,11 +85,11 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
         warnings.warn(f'\nSkipped existing session row: {session_key, subject, date}',
                       stacklevel=2)
 
-    default_project_id = "TEC"
+    # default_project_id = "TEC"
     try:
-        session.ProjectSession.insert1((default_project_id, session_key)) #TR: has to match project table (shorthand - NOT description)
+        session.ProjectSession.insert1((project_key, session_key)) #TR: has to match project table (shorthand - NOT description)
     except DuplicateError:
-        warnings.warn(f'\nSkipped existing ProjectSession row: {default_project_id, session_key}',
+        warnings.warn(f'\nSkipped existing ProjectSession row: {project_key, session_key}',
                       stacklevel=2)
 
     # CB NOTE: I think this should be modified to store the relative path
@@ -108,19 +107,19 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
 
     # Insert each scan %TR: Why is that not inherited from Session??
     for idx, s in enumerate(scan_keys):
-        equipment_placeholder = "dummy"  # TODO: Inherit From Session!
-        software_placeholder = "ScanImage"
-        location_placeholder = "dummy"
+        # equipment_placeholder = "dummy"  # TODO: Inherit From Session!
+        # software_placeholder = "ScanImage"
+        # location_placeholder = "dummy"
         path = find_full_path(root_paths, scan_basenames[idx])
         try:
-            scan.Scan.insert1((session_key, s, equipment_placeholder,
-                               software_placeholder, ''))
+            scan.Scan.insert1((session_key, s, equipment_key,
+                               software_key, ''))
         except DuplicateError:
             warnings.warn(f'\nSkipped existing scan: {s}',
                           stacklevel=2)
         
         try:
-            scan.ScanLocation.insert1((session_key, s, location_placeholder))
+            scan.ScanLocation.insert1((session_key, s, location_key))
         except DuplicateError:
             warnings.warn(f'\nSkipped existing ScanLocation: {s}',
                           stacklevel=2)
