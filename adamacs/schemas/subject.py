@@ -93,6 +93,14 @@ class Subject(dj.Manual):
     -> Protocol
     """
 
+@schema
+class SubjectRspace(dj.Manual):
+    definition = """
+    -> Subject
+    ---
+    rspace_subject_id: varchar(32) # id of rspace subject folder
+    """
+
 
 @schema
 class SubjectGenotype(dj.Manual):
