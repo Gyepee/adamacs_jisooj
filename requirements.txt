@@ -7,7 +7,7 @@ matplotlib
 # graphviz
 ruamel.yaml
 # suite2p @ git+https://github.com/SFB1089/suite2p@master
-# rspace-client==1.6.0
+rspace-client==2.5.0
 # element-deeplabcut already requires element-interface
 element-interface @ git+https://github.com/SFB1089/element-interface.git@main
 element-calcium-imaging @ git+https://github.com/SFB1089/element-calcium-imaging.git@main
