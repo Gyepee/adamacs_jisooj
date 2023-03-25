@@ -11,6 +11,7 @@ from pathlib import Path
 import glob
 import os
 import sys
+import tifffile
 from suite2p import default_ops, run_s2p
 ops = default_ops() # populates ops with the default options
 
