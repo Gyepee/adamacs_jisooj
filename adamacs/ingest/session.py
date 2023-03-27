@@ -105,6 +105,24 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(), pro
         warnings.warn(f'\nSkipped existing SessionUser row: {session_key, user}',
                       stacklevel=2)
 
+    session_dict = {
+        'same_site_id': session_key}
+    try:
+        session.SessionSite.insert1((session_dict))
+    except DuplicateError:
+        warnings.warn(f'\nSkipped existing SessionSite row: {session_key}',
+                      stacklevel=2)
+    
+    session_dict = {
+        'session_id': session_key,
+        'same_site_id': session_key}
+    try:
+        session.SessionSameSite.insert1((session_dict)) # TR: Same Key is default. Update manually for chronic recordigns!
+    except DuplicateError:
+        warnings.warn(f'\nSkipped existing SessionSite row: {session_key}',
+                      stacklevel=2)
+
+
     # Insert each scan %TR: Why is that not inherited from Session??
     for idx, s in enumerate(scan_keys):
         # equipment_placeholder = "dummy"  # TODO: Inherit From Session!
