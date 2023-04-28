@@ -49,10 +49,13 @@ def get_imaging_root_data_dir():
 def get_scan_image_files(scan_key):
     """"""
     # Folder structure: root / subject / session / .tif (raw)
-    from .pipeline import session
+    from .pipeline import session, scan
     data_dir = get_imaging_root_data_dir()
-    sess_dir = (session.SessionDirectory & scan_key).fetch1('session_dir')
-    scan_dir = find_full_path(data_dir, sess_dir)
+    # sess_dir = (session.SessionDirectory & scan_key).fetch1('session_dir')
+    # scan_dir = find_full_path(data_dir, sess_dir)
+    scanpath_dir = (scan.ScanPath & scan_key).fetch1('path') #TR23: mod to get scan - not session dir
+    scan_dir = find_full_path(data_dir, scanpath_dir)
+    
 
     if not scan_dir.exists():
         raise FileNotFoundError(f'Session directory not found ({scan_dir})')
