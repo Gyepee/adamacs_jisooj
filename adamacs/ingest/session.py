@@ -32,7 +32,7 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(), pro
     valid_paths = [p for p in paths if p.is_dir()]
     match_paths = []
     for p in valid_paths:
-        match_paths.extend([d for d in p.rglob(f'*{session_key}*') if d.is_dir()])
+        match_paths.extend([d for d in p.rglob(f'*{session_key}*') if d.is_dir()]) #TR23: limit to dirs only
         # match_paths.extend(list(p.rglob(f'*{session_key}*')))
     
     n_scans = len(match_paths)
