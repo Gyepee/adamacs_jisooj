@@ -58,7 +58,8 @@ def ingest_aux(session_key, root_paths=get_imaging_root_data_dir(),
     valid_paths = [p for p in paths if p.is_dir()]
     match_paths = []
     for p in valid_paths:
-        match_paths.extend(list(p.rglob(f'*{session_key}*')))
+        # match_paths.extend(list(p.rglob(f'*{session_key}*')))
+        match_paths.extend([d for d in p.rglob(f'*{session_key}*') if d.is_dir()]) #TR23: limit to dirs only
     
     n_scans = len(match_paths)
     if verbose:
@@ -70,15 +71,15 @@ def ingest_aux(session_key, root_paths=get_imaging_root_data_dir(),
     scan_basenames = [x for x in basenames if bool(re.search(scan_pattern, x))]
     
     # For now this is only supposed to work for 1 scan per session
-    if len(scan_basenames) != 1:
-        raise ValueError(f"Found more or less than 1 scan in {session_key}")
+    # if len(scan_basenames) != 1:
+        # raise ValueError(f"Found more or less than 1 scan in {session_key}")
     
     aux_files = []
     for k in scan_basenames:
         curr_path = find_full_path(root_paths, k)
         aux_file_paths = [fp.as_posix() for fp in curr_path.glob('*.h5')]
-        if len(aux_file_paths) != 1:
-            raise ValueError(f"More or less than 1 aux_files found in {k}")
+        # if len(aux_file_paths) != 1:
+            # raise ValueError(f"More or less than 1 aux_files found in {k}")
         curr_file = ws.loadDataFile(filename=aux_file_paths[0], format_string='double' )
         aux_files.append(curr_file)
         
@@ -93,6 +94,7 @@ def ingest_aux(session_key, root_paths=get_imaging_root_data_dir(),
     sweep_duration = aux_files[0]['header']['SweepDuration'][0][0]
 
     event.BehaviorRecording.insert1({'session_id': session_key, 'recording_start_time': start_datetime, 'recording_duration': sweep_duration}, skip_duplicates=True)
+    
     for p in aux_file_paths:
         event.BehaviorRecording.File.insert1([session_key, p], skip_duplicates=True)
     for curr_aux in aux_files:
