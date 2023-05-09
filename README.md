@@ -20,4 +20,21 @@ calcium imaging Element:
 5. Activate the newly created environemnt with `conda activate datajoint`
 6. Install the latest datajoint with dependencies with `conda install -c conda-forge datajoint`
 7. Install adamacs with `pip install .`
-8. To get started right away open `jupyter notebook` and open a notebook you want to use.
+8. TR: Install suite2p - (on our AMD servers or locally):
+  1. On analysis servers ***Tatchu and Loki***: 
+      1. make sure to be on forge: 
+         `conda config --add channels conda-forge
+          conda config --set channel_priority strict` 
+      2. `conda install "libblas=*=*mkl"`
+      3. `git clone https://github.com/SFB1089/suite2p.git`
+      4. `cd suite2p'
+      5. `pip install -e .`
+      6. `conda install pytorch`
+      7. `conda install numba`
+      8. `conda install jupyter`
+  2. Locally
+      1. `git clone https://github.com/SFB1089/suite2p.git`
+      2. `cd suite2p'
+      5. `pip install -e .`
+10. To get started right away open `jupyter notebook` and open a notebook you want to use.
+11. I highly recommend to use VSCode with remotely SSH to work on the server.
