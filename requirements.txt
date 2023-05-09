@@ -4,6 +4,7 @@ numpy
 pandas
 requests
 matplotlib
+natsort
 # graphviz
 ruamel.yaml
 # suite2p @ git+https://github.com/SFB1089/suite2p@master
