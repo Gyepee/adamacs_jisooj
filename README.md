@@ -37,4 +37,7 @@ calcium imaging Element:
       2. `cd suite2p'
       5. `pip install -e .`
 10. To get started right away open `jupyter notebook` and open a notebook you want to use.
-11. I highly recommend to use VSCode with remotely SSH to work on the server.
+11. I highly recommend to use VSCode with remotely SSH to work on the server:
+  1. Install VS Code, then install the Remote Development extension pack. https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack   
+  2. connect to datajoint server ***Tatchu*** with your credentials: ssh yourname@serverIP
+  3. select your 'datajoint' environment as python environment
