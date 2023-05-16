@@ -89,7 +89,8 @@ def rescale_image(running_z_projection, p1, p99):
     rescaled_image[rescaled_image < 0] = 0
     rescaled_image[rescaled_image > 1] = 1
 
-    rescaled_image_8bit = cv2.convertScaleAbs(rescaled_image * 255 / np.max(rescaled_image))
+    # rescaled_image_8bit = cv2.convertScaleAbs(rescaled_image * 255 / np.max(rescaled_image))
+    rescaled_image_8bit = cv2.convertScaleAbs(rescaled_image * 255 / 1)
 
     return rescaled_image_8bit
 
