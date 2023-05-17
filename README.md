@@ -13,7 +13,7 @@ calcium imaging Element:
 ![adamacs_calcium_imaging](./images/adamacs_calcium_imaging.svg)
 
 # Installation
-1. Install Anaconda and go to a command prompt.
+1. Install Anaconda and go to a command prompt. (miniconda preferred! Do not install in user roaming profile. Install under local directory.)
 2. At the command prompot navigate to a directory where you want to download adamacs and type `git clone https://github.com/SFB1089/adamacs.git`
 3. Enter the adamacs directory that was created with `cd adamacs`
 4. Create an environment called `datajoint` with `conda create --name datajoint python=3.8 `
