@@ -13,7 +13,7 @@ calcium imaging Element:
 ![adamacs_calcium_imaging](./images/adamacs_calcium_imaging.svg)
 
 # Installation
-1. Install Anaconda and go to a command prompt.
+1. Install Anaconda and go to a command prompt. (miniconda preferred! Do not install in user roaming profile. Install under local directory.)
 2. At the command prompot navigate to a directory where you want to download adamacs and type `git clone https://github.com/SFB1089/adamacs.git`
 3. Enter the adamacs directory that was created with `cd adamacs`
 4. Create an environment called `datajoint` with `conda create --name datajoint python=3.8 `
@@ -41,3 +41,7 @@ calcium imaging Element:
   1. Install VS Code, then install the Remote Development extension pack. https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack   
   2. connect to datajoint server ***Tatchu*** with your credentials: ssh yourname@serverIP
   3. select your 'datajoint' environment as python environment
+
+
+Here a starting point of how to use the pipeline:
+https://www.evernote.com/shard/s4/sh/6c2cffa0-466e-460b-9bbb-62641aa3ed04/7qwbz9PwX692sM7JBSgrAef0Syt0BM0CaPPxXFuTO53Kbt8Po6RMPFg4jA
