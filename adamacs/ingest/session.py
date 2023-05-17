@@ -6,6 +6,7 @@ from ..pipeline import subject, session, scan
 from ..paths import get_imaging_root_data_dir
 from datajoint.errors import DuplicateError
 from element_interface.utils import find_full_path
+from adamacs.ingest.pyrat import PyratIngestion
 
 """ Notes from Chris
 1. I placed previous default (r'C:\\datajoint') as the default for
@@ -16,8 +17,7 @@ from element_interface.utils import find_full_path
 """
 
 
-def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
-                        verbose=False):
+def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(), project_key='dummy', equipment_key='dummy', location_key='dummy', software_key='ScanImage', verbose=False):
     """Locate all directories in session_path that are part
     of the sesssion. Extract the following attributes from
     the directory names:
@@ -32,7 +32,8 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
     valid_paths = [p for p in paths if p.is_dir()]
     match_paths = []
     for p in valid_paths:
-        match_paths.extend(list(p.rglob(f'*{session_key}*'))) #TR: added Tiff extention here.
+        match_paths.extend([d for d in p.rglob(f'*{session_key}*') if d.is_dir()]) #TR23: limit to dirs only
+        # match_paths.extend(list(p.rglob(f'*{session_key}*')))
     
     n_scans = len(match_paths)
     if verbose:
@@ -58,11 +59,13 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
         raise ValueError("Scans from multiple animals found. Must be 1 animal.")
     subject_id = subjects[0]
     if not (subject.Subject & f'subject=\"{subject_id}\"'):
-        raise ValueError(f'Subject {subject_id} must be added before this session.')
+        # raise ValueError(f'Subject {subject_id} must be added before this session.')
+        print(f'Subject {subject_id} will be added to ingest this session.')
+        PyratIngestion().ingest_animal(subject_id, prompt=False)
 
     # Find the user ID by position
     # CB NOTE: Will future data folders match user_id int values from pyrat ingestion? 
-    # TR NOTE: Actually, no. The pyrat ingestion users are not going to be the real users of the animals. These are Laura and myself. We are the "owners" of the animals. So this has to be separate, also for the pyrat ingest. I suggest to call the pyrat ingest from a specdific user ID - and have the very monolithic user table generated once.
+    # TR NOTE: Actually, no. The pyrat ingestion users are not going to be the real users of the animals. These are Laura and myself. We are the "owners" of the animals. So this has to be separate, also for the pyrat ingest. I suggest to call the pyrat ingest from a specific user ID - and have the very monolithic user table generated once.
 
     user_keys = [x.split('_')[0] for x in basenames]
     if not all_equal(user_keys):
@@ -83,9 +86,12 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
         warnings.warn(f'\nSkipped existing session row: {session_key, subject, date}',
                       stacklevel=2)
 
-    default_project_id = "TEC"
-    session.ProjectSession.insert1((default_project_id, session_key)) #TR: has to match project table (shorthand - NOT description)
-
+    # default_project_id = "TEC"
+    try:
+        session.ProjectSession.insert1((project_key, session_key)) #TR: has to match project table (shorthand - NOT description)
+    except DuplicateError:
+        warnings.warn(f'\nSkipped existing ProjectSession row: {project_key, session_key}',
+                      stacklevel=2)
 
     # CB NOTE: I think this should be modified to store the relative path
     try:
@@ -100,21 +106,39 @@ def ingest_session_scan(session_key, root_paths=get_imaging_root_data_dir(),
         warnings.warn(f'\nSkipped existing SessionUser row: {session_key, user}',
                       stacklevel=2)
 
-    # Insert each scan
+    session_dict = {
+        'same_site_id': session_key}
+    try:
+        session.SessionSite.insert1((session_dict))
+    except DuplicateError:
+        warnings.warn(f'\nSkipped existing SessionSite row: {session_key}',
+                      stacklevel=2)
+    
+    session_dict = {
+        'session_id': session_key,
+        'same_site_id': session_key}
+    try:
+        session.SessionSameSite.insert1((session_dict)) # TR: Same Key is default. Update manually for chronic recordigns!
+    except DuplicateError:
+        warnings.warn(f'\nSkipped existing SessionSite row: {session_key}',
+                      stacklevel=2)
+
+
+    # Insert each scan %TR: Why is that not inherited from Session??
     for idx, s in enumerate(scan_keys):
-        equipment_placeholder = "mini2p1"  # TODO: Resolve how to extract equipment %TR: extract from userfunction header at setup
-        software_placeholder = "ScanImage"
-        location_placeholder = "RSCa"
+        # equipment_placeholder = "dummy"  # TODO: Inherit From Session!
+        # software_placeholder = "ScanImage"
+        # location_placeholder = "dummy"
         path = find_full_path(root_paths, scan_basenames[idx])
         try:
-            scan.Scan.insert1((session_key, s, equipment_placeholder,
-                               software_placeholder, ''))
+            scan.Scan.insert1((session_key, s, equipment_key,
+                               software_key, ''))
         except DuplicateError:
             warnings.warn(f'\nSkipped existing scan: {s}',
                           stacklevel=2)
         
         try:
-            scan.ScanLocation.insert1((session_key, s, location_placeholder))
+            scan.ScanLocation.insert1((session_key, s, location_key))
         except DuplicateError:
             warnings.warn(f'\nSkipped existing ScanLocation: {s}',
                           stacklevel=2)

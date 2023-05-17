@@ -36,21 +36,21 @@ def get_timestamps(data, sr, thr=1):
     timestamps = idc / sr
     return timestamps
 
-def prepare_timestamps(ts, session_key, event_type):
+def prepare_timestamps(ts, session_key, scan_key, event_type):
     """Prepares timestamps for insert with datajoint"""
     ts_shutter_chan_start = ts[0::2]
     ts_shutter_chan_stop = ts[1::2]
     
     to_insert = [list(ts_shutter_chan_start), list(ts_shutter_chan_stop)]  
-    to_insert = [[session_key, event_type, *i] for i in zip(*to_insert)]  # transposes the list to get rows/cols right
+    to_insert = [[session_key, scan_key, event_type, *i] for i in zip(*to_insert)]  # transposes the list to get rows/cols right
     if len(to_insert) != len(ts_shutter_chan_start):
         to_insert.append([session_key, event_type, ts_shutter_chan_start[-1], ''])
 
     return to_insert
 
-def ingest_aux(session_key, root_paths=get_imaging_root_data_dir(),
-                        verbose=False):
-    
+def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(),
+                        verbose=False): #TR23: included scan key
+     
     if not verbose:
         warnings.filterwarnings('ignore')
 
@@ -58,7 +58,8 @@ def ingest_aux(session_key, root_paths=get_imaging_root_data_dir(),
     valid_paths = [p for p in paths if p.is_dir()]
     match_paths = []
     for p in valid_paths:
-        match_paths.extend(list(p.rglob(f'*{session_key}*')))
+        # match_paths.extend(list(p.rglob(f'*{session_key}*')))
+        match_paths.extend([d for d in p.rglob(f'*{scan_key}*') if d.is_dir()]) #TR23: limit to dirs only
     
     n_scans = len(match_paths)
     if verbose:
@@ -92,63 +93,71 @@ def ingest_aux(session_key, root_paths=get_imaging_root_data_dir(),
     start_datetime = '-'.join(start_datetime)
     sweep_duration = aux_files[0]['header']['SweepDuration'][0][0]
 
-    event.BehaviorRecording.insert1({'session_id': session_key, 'recording_start_time': start_datetime, 'recording_duration': sweep_duration}, skip_duplicates=True)
+    event.BehaviorRecording.insert1({'session_id': session_key, 'scan_id': scan_key, 'recording_start_time': start_datetime, 'recording_duration': sweep_duration}, skip_duplicates=True)
+    
     for p in aux_file_paths:
-        event.BehaviorRecording.File.insert1([session_key, p], skip_duplicates=True)
+        event.BehaviorRecording.File.insert1([session_key, scan_key, p], skip_duplicates=True)
     for curr_aux in aux_files:
         sweep = [x for x in curr_aux.keys() if 'sweep' in x][0]
 
         sr = curr_aux['header']['AcquisitionSampleRate'][0][0]
-
+        numberDI = len(curr_aux['header']['DIChannelNames'])
         timebase = np.arange(curr_aux[sweep]['analogScans'].shape[1]) / sr
 
         # DIGITAL SIGNALS
-        digital_channels = demultiplex(curr_aux[sweep]['digitalScans'][0], 5)
-        main_track_gate_chan = digital_channels[4]
-        shutter_chan = digital_channels[3]
-        mini2p_frame_chan = digital_channels[2]
-        mini2p_line_chan = digital_channels[1]
-        mini2p_vol_chan = digital_channels[0]
-        
+        digital_channels = demultiplex(curr_aux[sweep]['digitalScans'][0], numberDI)
+        main_track_gate_chan = digital_channels[5]
+        shutter_chan = digital_channels[4]
+        mini2p_frame_chan = digital_channels[1]
+        mini2p_line_chan = digital_channels[2]
+        mini2p_vol_chan = digital_channels[3]
+        mini2p_HARP_gate = digital_channels[0]
+
         """Calculate timestamps"""
         ts_main_track_gate_chan = get_timestamps(main_track_gate_chan, sr)
         ts_shutter_chan = get_timestamps(shutter_chan, sr)
         ts_mini2p_frame_chan = get_timestamps(mini2p_frame_chan, sr)
         ts_mini2p_line_chan = get_timestamps(mini2p_line_chan, sr)
         ts_mini2p_vol_chan = get_timestamps(mini2p_vol_chan, sr)
+        ts_mini2p_HARP_gate = get_timestamps(mini2p_HARP_gate, sr)
         
         """Analog signals"""
         cam_trigger = curr_aux[sweep]['analogScans'][0]
         bpod_trial_vis_chan = curr_aux[sweep]['analogScans'][1]
         bpod_reward1_chan = curr_aux[sweep]['analogScans'][2]
         bpod_tone_chan = curr_aux[sweep]['analogScans'][3]
+        light_flash_chan = curr_aux[sweep]['analogScans'][4]
         
         ts_cam_trigger = get_timestamps(cam_trigger, sr)
         ts_bpod_visual = get_timestamps(bpod_trial_vis_chan, sr)
         ts_bpod_reward = get_timestamps(bpod_reward1_chan, sr)
         ts_bpod_tone = get_timestamps(bpod_tone_chan, sr)
+        ts_light_flash =  get_timestamps(light_flash_chan, sr)
         
         # Insert timestamps into tables 
         # - TR23: Why not define event type headers here?
-        # event_type_headers = ['main_track_gate', 'shutter', 'mini2p_frames', 'mini2p_lines', 'mini2p_volumes', 'aux_bpod_cam',
-        #       'aux_bpod_visual', 'aux_bpod_reward', 'aux_bpod_tone']
-        # for e in event_type_headers:
-        #    event.EventType.insert1({'event_type_headers': e, 'event_type_description': ''}, skip_duplicates=True,)
+        event_types = ['main_track_gate', 'HARP_gate', 'shutter',  'mini2p_frames', 'mini2p_lines', 'mini2p_volumes', 'aux_cam', 'arena_LED',
+                    'aux_bpod_visual', 'aux_bpod_reward', 'aux_bpod_tone']
+
+        for e in event_types:
+            event.EventType.insert1({'event_type': e, 'event_type_description': ''}, skip_duplicates=True,)
 
         event_types = {
             'main_track_gate': ts_main_track_gate_chan,
+            'HARP_gate': ts_mini2p_HARP_gate,
+            'arena_LED': ts_light_flash,
             'shutter': ts_shutter_chan,
             'mini2p_frames': ts_mini2p_frame_chan,
             'mini2p_lines': ts_mini2p_line_chan,
             'mini2p_volumes': ts_mini2p_vol_chan,
-            'aux_bpod_cam': ts_cam_trigger,
+            'aux_cam': ts_cam_trigger,
             'aux_bpod_visual': ts_bpod_visual,
             'aux_bpod_reward': ts_bpod_reward,
             'aux_bpod_tone': ts_bpod_tone
         }
         
         for event_type, timestamps in event_types.items():
-            to_insert = prepare_timestamps(timestamps, session_key, event_type)
+            to_insert = prepare_timestamps(timestamps, session_key, scan_key, event_type)
             event.Event.insert(to_insert, skip_duplicates=True, allow_direct_insert=True)
         
         
