@@ -23,7 +23,9 @@ calcium imaging Element:
 8. TR: Install suite2p - (on our AMD servers or locally):
   1. On analysis servers ***Tatchu and Loki***: 
       1. make sure to be on forge: 
+      
          `conda config --add channels conda-forge`
+         
           `conda config --set channel_priority strict` 
       2. `conda install "libblas=*=*mkl"`
       3. `git clone https://github.com/SFB1089/suite2p.git`
