@@ -85,7 +85,9 @@ class Bpodfile(object):
             PyratIngestion().ingest_animal(self.subject_id)
 
         # ------------------------------- Some constants -------------------------------
-        session_id = (  # incriment previous session id by 1
+        # TR23: this will not work. We do not use a numeric session_id. TODO: change to SessionHash (to get from imaging - or redo)
+
+        session_id = (  # increment previous session id by 1
             dj.U().aggr(session.Session, n="max(session_id)").fetch("n") or 0
         ) + 1
         bpod_version = self.session_data["Info"]["StateMachineVersion"].split(" ")[-1]
