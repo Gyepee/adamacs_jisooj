@@ -27,7 +27,7 @@ calcium imaging Element:
          `conda config --add channels conda-forge`
          
           `conda config --set channel_priority strict` 
-      2. `conda install "libblas=*=*mkl"`
+      2. `conda install "libblas=*=*mkl"` this can take a while. Be patient.
       3. `git clone https://github.com/SFB1089/suite2p.git`
       4. `cd suite2p'
       5. `pip install -e .`
