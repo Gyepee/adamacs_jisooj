@@ -61,9 +61,9 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(),
         # match_paths.extend(list(p.rglob(f'*{session_key}*')))
         match_paths.extend([d for d in p.rglob(f'*{scan_key}*') if d.is_dir()]) #TR23: limit to dirs only
     
-    n_scans = len(match_paths)
+    n_aux = len(match_paths)
     if verbose:
-        print(f'Number of scans found: {n_scans}')
+        print(f'Number of aux-files found: {n_aux}')
 
     scan_pattern = "scan.{8}"
     basenames = [x.name for x in match_paths]
@@ -113,6 +113,14 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(),
         mini2p_vol_chan = digital_channels[3]
         mini2p_HARP_gate = digital_channels[0]
 
+        main_track_gate_chan[-1] = 0  # TR23 - to partially save truncated recordings, set all last samples to zero
+        shutter_chan[-1] = 0
+        mini2p_frame_chan[-1] = 0
+        mini2p_line_chan[-1] = 0
+        mini2p_vol_chan[-1] = 0
+        mini2p_HARP_gate[-1] = 0
+
+
         """Calculate timestamps"""
         ts_main_track_gate_chan = get_timestamps(main_track_gate_chan, sr)
         ts_shutter_chan = get_timestamps(shutter_chan, sr)
@@ -121,6 +129,8 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(),
         ts_mini2p_vol_chan = get_timestamps(mini2p_vol_chan, sr)
         ts_mini2p_HARP_gate = get_timestamps(mini2p_HARP_gate, sr)
         
+
+
         """Analog signals"""
         cam_trigger = curr_aux[sweep]['analogScans'][0]
         bpod_trial_vis_chan = curr_aux[sweep]['analogScans'][1]
@@ -128,6 +138,12 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(),
         bpod_tone_chan = curr_aux[sweep]['analogScans'][3]
         light_flash_chan = curr_aux[sweep]['analogScans'][4]
         
+        cam_trigger[-1] = 0
+        bpod_trial_vis_chan[-1] = 0
+        bpod_reward1_chan[-1] = 0
+        bpod_tone_chan[-1] = 0
+        light_flash_chan[-1] = 0
+
         ts_cam_trigger = get_timestamps(cam_trigger, sr)
         ts_bpod_visual = get_timestamps(bpod_trial_vis_chan, sr)
         ts_bpod_reward = get_timestamps(bpod_reward1_chan, sr)
