@@ -36,9 +36,9 @@
         "suite2p_tif_tmp": [
             "/home/tobiasr/s2p_tiff/"
         ],          
-        "pyrat_user_token": "6-uRxp552avVQdlE2VNEcRKC",
-        "pyrat_client_token": "2-KNgH619evtL6stOvMQl19X",
+        "pyrat_user_token": "",
+        "pyrat_client_token": "",
         "rspace_URL": "https://rspace.rhrz.uni-bonn.de/",
-        "rspace_API_key": "SvMDsvzYNfJY36E0aHc5c2TriwsHWqs5"
+        "rspace_API_key": ""
     }
 }
