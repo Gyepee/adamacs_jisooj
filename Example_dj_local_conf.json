@@ -1,6 +1,6 @@
 {
     "database.host": "172.26.128.53",
-    "database.password": "K0%kS0",
+    "database.password": "",
     "database.user": "tobiasr",
     "database.port": 3306,
     "database.reconnect": true,
