@@ -93,7 +93,9 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(),
     start_datetime = '-'.join(start_datetime)
     sweep_duration = aux_files[0]['header']['SweepDuration'][0][0]
 
-    event.BehaviorRecording.insert1({'session_id': session_key, 'scan_id': scan_key, 'recording_start_time': start_datetime, 'recording_duration': sweep_duration}, skip_duplicates=True)
+    recording_notes = ''
+
+    event.BehaviorRecording.insert1({'session_id': session_key, 'scan_id': scan_key, 'recording_start_time': start_datetime, 'recording_duration': sweep_duration, 'recording_notes': recording_notes}, skip_duplicates=True)
     
     for p in aux_file_paths:
         event.BehaviorRecording.File.insert1([session_key, scan_key, p], skip_duplicates=True)
