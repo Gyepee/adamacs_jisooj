@@ -9,7 +9,7 @@
     "loglevel": "INFO",
     "safemode": true,
     "fetch_format": "array",
-    "display.limit": 12,
+    "display.limit": 50,
     "display.width": 14,
     "display.show_tuple_count": true,
     "database.use_tls": null,
@@ -39,6 +39,15 @@
         "pyrat_user_token": "",
         "pyrat_client_token": "",
         "rspace_URL": "https://rspace.rhrz.uni-bonn.de/",
-        "rspace_API_key": ""
-    }
+        "rspace_API_key": ""},
+    "stores": {
+        "external": {"access_key": "1234567",
+            "bucket": "testbucket",
+            "endpoint": "s3.amazonaws.com:9000",
+            "location": "datajoint-projects/lab1",
+            "protocol": "s3",
+            "secret_key": "foaf1234"},
+        "external-raw": {   
+            "location": "/datajoint-db/blobs/adamacs",
+            "protocol": "file"}}
 }
