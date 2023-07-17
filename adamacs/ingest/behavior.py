@@ -48,8 +48,8 @@ def prepare_timestamps(ts, session_key, scan_key, event_type):
 
     return to_insert
 
-def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(),
-                        verbose=False): #TR23: included scan key
+def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), aux_setup_type = "openfield",
+                        verbose=False): #TR23: included scan key, included setupID
      
     if not verbose:
         warnings.filterwarnings('ignore')
@@ -106,76 +106,133 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(),
         numberDI = len(curr_aux['header']['DIChannelNames'])
         timebase = np.arange(curr_aux[sweep]['analogScans'].shape[1]) / sr
 
-        # DIGITAL SIGNALS
-        digital_channels = demultiplex(curr_aux[sweep]['digitalScans'][0], numberDI)
-        main_track_gate_chan = digital_channels[5]
-        shutter_chan = digital_channels[4]
-        mini2p_frame_chan = digital_channels[1]
-        mini2p_line_chan = digital_channels[2]
-        mini2p_vol_chan = digital_channels[3]
-        mini2p_HARP_gate = digital_channels[0]
+        if aux_setup_type is "openfield":
+            # DIGITAL SIGNALS
+            digital_channels = demultiplex(curr_aux[sweep]['digitalScans'][0], numberDI)
+            main_track_gate_chan = digital_channels[5]
+            shutter_chan = digital_channels[4]
+            mini2p_frame_chan = digital_channels[1]
+            mini2p_line_chan = digital_channels[2]
+            mini2p_vol_chan = digital_channels[3]
+            mini2p_HARP_gate = digital_channels[0]
 
-        main_track_gate_chan[-1] = 0  # TR23 - to partially save truncated recordings, set all last samples to zero
-        shutter_chan[-1] = 0
-        mini2p_frame_chan[-1] = 0
-        mini2p_line_chan[-1] = 0
-        mini2p_vol_chan[-1] = 0
-        mini2p_HARP_gate[-1] = 0
-
-
-        """Calculate timestamps"""
-        ts_main_track_gate_chan = get_timestamps(main_track_gate_chan, sr)
-        ts_shutter_chan = get_timestamps(shutter_chan, sr)
-        ts_mini2p_frame_chan = get_timestamps(mini2p_frame_chan, sr)
-        ts_mini2p_line_chan = get_timestamps(mini2p_line_chan, sr)
-        ts_mini2p_vol_chan = get_timestamps(mini2p_vol_chan, sr)
-        ts_mini2p_HARP_gate = get_timestamps(mini2p_HARP_gate, sr)
-        
+            main_track_gate_chan[-1] = 0  # TR23 - to partially save truncated recordings, set all last samples to zero
+            shutter_chan[-1] = 0
+            mini2p_frame_chan[-1] = 0
+            mini2p_line_chan[-1] = 0
+            mini2p_vol_chan[-1] = 0
+            mini2p_HARP_gate[-1] = 0
 
 
-        """Analog signals"""
-        cam_trigger = curr_aux[sweep]['analogScans'][0]
-        bpod_trial_vis_chan = curr_aux[sweep]['analogScans'][1]
-        bpod_reward1_chan = curr_aux[sweep]['analogScans'][2]
-        bpod_tone_chan = curr_aux[sweep]['analogScans'][3]
-        light_flash_chan = curr_aux[sweep]['analogScans'][4]
-        
-        cam_trigger[-1] = 0
-        bpod_trial_vis_chan[-1] = 0
-        bpod_reward1_chan[-1] = 0
-        bpod_tone_chan[-1] = 0
-        light_flash_chan[-1] = 0
+            """Calculate timestamps"""
+            ts_main_track_gate_chan = get_timestamps(main_track_gate_chan, sr)
+            ts_shutter_chan = get_timestamps(shutter_chan, sr)
+            ts_mini2p_frame_chan = get_timestamps(mini2p_frame_chan, sr)
+            ts_mini2p_line_chan = get_timestamps(mini2p_line_chan, sr)
+            ts_mini2p_vol_chan = get_timestamps(mini2p_vol_chan, sr)
+            ts_mini2p_HARP_gate = get_timestamps(mini2p_HARP_gate, sr)
+            
 
-        ts_cam_trigger = get_timestamps(cam_trigger, sr)
-        ts_bpod_visual = get_timestamps(bpod_trial_vis_chan, sr)
-        ts_bpod_reward = get_timestamps(bpod_reward1_chan, sr)
-        ts_bpod_tone = get_timestamps(bpod_tone_chan, sr)
-        ts_light_flash =  get_timestamps(light_flash_chan, sr)
-        
-        # Insert timestamps into tables 
-        # - TR23: Why not define event type headers here?
-        event_types = ['main_track_gate', 'HARP_gate', 'shutter',  'mini2p_frames', 'mini2p_lines', 'mini2p_volumes', 'aux_cam', 'arena_LED',
-                    'aux_bpod_visual', 'aux_bpod_reward', 'aux_bpod_tone']
 
-        for e in event_types:
-            event.EventType.insert1({'event_type': e, 'event_type_description': ''}, skip_duplicates=True,)
+            """Analog signals"""
+            cam_trigger = curr_aux[sweep]['analogScans'][0]
+            bpod_trial_vis_chan = curr_aux[sweep]['analogScans'][1]
+            bpod_reward1_chan = curr_aux[sweep]['analogScans'][2]
+            bpod_tone_chan = curr_aux[sweep]['analogScans'][3]
+            light_flash_chan = curr_aux[sweep]['analogScans'][4]
+            
+            cam_trigger[-1] = 0
+            bpod_trial_vis_chan[-1] = 0
+            bpod_reward1_chan[-1] = 0
+            bpod_tone_chan[-1] = 0
+            light_flash_chan[-1] = 0
 
-        event_types = {
-            'main_track_gate': ts_main_track_gate_chan,
-            'HARP_gate': ts_mini2p_HARP_gate,
-            'arena_LED': ts_light_flash,
-            'shutter': ts_shutter_chan,
-            'mini2p_frames': ts_mini2p_frame_chan,
-            'mini2p_lines': ts_mini2p_line_chan,
-            'mini2p_volumes': ts_mini2p_vol_chan,
-            'aux_cam': ts_cam_trigger,
-            'aux_bpod_visual': ts_bpod_visual,
-            'aux_bpod_reward': ts_bpod_reward,
-            'aux_bpod_tone': ts_bpod_tone
-        }
-        
+            ts_cam_trigger = get_timestamps(cam_trigger, sr)
+            ts_bpod_visual = get_timestamps(bpod_trial_vis_chan, sr)
+            ts_bpod_reward = get_timestamps(bpod_reward1_chan, sr)
+            ts_bpod_tone = get_timestamps(bpod_tone_chan, sr)
+            ts_light_flash =  get_timestamps(light_flash_chan, sr)
+            
+            # Insert timestamps into tables 
+            # - TR23: Why not define event type headers here?
+            event_types = ['main_track_gate', 'HARP_gate', 'shutter',  'mini2p_frames', 'mini2p_lines', 'mini2p_volumes', 'aux_cam', 'arena_LED',
+                        'aux_bpod_visual', 'aux_bpod_reward', 'aux_bpod_tone']
+                        
+            for e in event_types:
+                event.EventType.insert1({'event_type': e, 'event_type_description': ''}, skip_duplicates=True,)
+
+            event_types = {
+                'main_track_gate': ts_main_track_gate_chan,
+                'HARP_gate': ts_mini2p_HARP_gate,
+                'arena_LED': ts_light_flash,
+                'shutter': ts_shutter_chan,
+                'mini2p_frames': ts_mini2p_frame_chan,
+                'mini2p_lines': ts_mini2p_line_chan,
+                'mini2p_volumes': ts_mini2p_vol_chan,
+                'aux_cam': ts_cam_trigger,
+                'aux_bpod_visual': ts_bpod_visual,
+                'aux_bpod_reward': ts_bpod_reward,
+                'aux_bpod_tone': ts_bpod_tone
+            }
+        elif aux_setup_type is "headfixed": #TR23 - HEADFIXED MINI2p - #mini2p01 - needs to be set in scan schema! Taken from userfunction_consolidate_files argument
+            print("not done")
+        elif aux_setup_type is "bench2p": #TR23 - HEADFIXED Bench2p - #bench2p - needs to be set in scan schema! Taken from userfunction_consolidate_files argument
+            # DIGITAL SIGNALS
+            digital_channels = demultiplex(curr_aux[sweep]['digitalScans'][0], numberDI)
+            main_track_gate_chan = digital_channels[4]
+            shutter_chan = digital_channels[3]
+            bench2p_frame_chan = digital_channels[2]
+            bench2p_line_chan = digital_channels[1]
+            bench2p_vol_chan = digital_channels[0]
+
+            main_track_gate_chan[-1] = 0  # TR23 - to partially save truncated recordings, set all last samples to zero
+            shutter_chan[-1] = 0
+            bench2p_line_chan[-1] = 0
+            bench2p_frame_chan[-1] = 0
+            bench2p_vol_chan[-1] = 0
+
+
+            """Calculate timestamps"""
+            ts_main_track_gate_chan = get_timestamps(main_track_gate_chan, sr)
+            ts_shutter_chan = get_timestamps(shutter_chan, sr)
+            ts_bench2p_frame_chan = get_timestamps(bench2p_frame_chan, sr)
+            ts_bench2p_line_chan = get_timestamps(bench2p_line_chan, sr)
+            ts_bench2p_vol_chan = get_timestamps(bench2p_vol_chan, sr)
+            ts_bench2p_HARP_gate = get_timestamps(bench2p_HARP_gate, sr)
+            
+
+
+            """Analog signals"""
+            cam_trigger = curr_aux[sweep]['analogScans'][0]
+            bpod_trial_vis_chan = curr_aux[sweep]['analogScans'][1]
+            bpod_reward1_chan = curr_aux[sweep]['analogScans'][2]
+            bpod_tone_chan = curr_aux[sweep]['analogScans'][3]
+            light_flash_chan = curr_aux[sweep]['analogScans'][4]
+            
+            cam_trigger[-1] = 0
+            bpod_trial_vis_chan[-1] = 0
+            bpod_reward1_chan[-1] = 0
+            bpod_tone_chan[-1] = 0
+            light_flash_chan[-1] = 0
+
+            ts_cam_trigger = get_timestamps(cam_trigger, sr)
+            ts_bpod_visual = get_timestamps(bpod_trial_vis_chan, sr)
+            ts_bpod_reward = get_timestamps(bpod_reward1_chan, sr)
+            ts_bpod_tone = get_timestamps(bpod_tone_chan, sr)
+            ts_light_flash =  get_timestamps(light_flash_chan, sr)
+            
+            # Insert timestamps into tables 
+            # - TR23: Why not define event type headers here?
+            event_types = ['main_track_gate', 'HARP_gate', 'shutter',  'mini2p_frames', 'mini2p_lines', 'mini2p_volumes', 'aux_cam', 'arena_LED',
+                        'aux_bpod_visual', 'aux_bpod_reward', 'aux_bpod_tone']
+            
+        elif aux_setup_type is "macroscope": #TR23 -  HEADFIXED Macroscope - #macroscope - needs to be set in scan schema! Connot be taken from userfunction_consolidate_files
+            print("not done")
+            
         for event_type, timestamps in event_types.items():
             to_insert = prepare_timestamps(timestamps, session_key, scan_key, event_type)
             event.Event.insert(to_insert, skip_duplicates=True, allow_direct_insert=True)
+        
+
         
         
