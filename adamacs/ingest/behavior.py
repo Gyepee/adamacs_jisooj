@@ -15,9 +15,6 @@ import re
 import pdb
 
 
-# TODO 
-# 1. For each 
-
 def demultiplex(auxdata, channels=5):
     """Demultiplex the digital data"""
     auxdata = auxdata.flatten()
@@ -106,7 +103,7 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
         numberDI = len(curr_aux['header']['DIChannelNames'])
         timebase = np.arange(curr_aux[sweep]['analogScans'].shape[1]) / sr
 
-        if aux_setup_type is "openfield":
+        if aux_setup_type == "openfield":
             # DIGITAL SIGNALS
             digital_channels = demultiplex(curr_aux[sweep]['digitalScans'][0], numberDI)
             main_track_gate_chan = digital_channels[5]
@@ -154,13 +151,11 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
             ts_light_flash =  get_timestamps(light_flash_chan, sr)
             
             # Insert timestamps into tables 
-            # - TR23: Why not define event type headers here?
-            event_types = ['main_track_gate', 'HARP_gate', 'shutter',  'mini2p_frames', 'mini2p_lines', 'mini2p_volumes', 'aux_cam', 'arena_LED',
-                        'aux_bpod_visual', 'aux_bpod_reward', 'aux_bpod_tone']
-                        
-            for e in event_types:
-                event.EventType.insert1({'event_type': e, 'event_type_description': ''}, skip_duplicates=True,)
 
+            # event_types = ['main_track_gate', 'HARP_gate', 'shutter',  'mini2p_frames', 'mini2p_lines', 'mini2p_volumes', 'aux_cam', 'arena_LED',
+            #             'aux_bpod_visual', 'aux_bpod_reward', 'aux_bpod_tone']
+            
+            
             event_types = {
                 'main_track_gate': ts_main_track_gate_chan,
                 'HARP_gate': ts_mini2p_HARP_gate,
@@ -174,9 +169,10 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
                 'aux_bpod_reward': ts_bpod_reward,
                 'aux_bpod_tone': ts_bpod_tone
             }
-        elif aux_setup_type is "headfixed": #TR23 - HEADFIXED MINI2p - #mini2p01 - needs to be set in scan schema! Taken from userfunction_consolidate_files argument
+                        
+        elif aux_setup_type == "headfixed": #TR23 - HEADFIXED MINI2p - #mini2p01 - needs to be set in scan schema! Taken from userfunction_consolidate_files argument
             print("not done")
-        elif aux_setup_type is "bench2p": #TR23 - HEADFIXED Bench2p - #bench2p - needs to be set in scan schema! Taken from userfunction_consolidate_files argument
+        elif aux_setup_type == "bench2p": #TR23 - HEADFIXED Bench2p - #bench2p - needs to be set in scan schema! Taken from userfunction_consolidate_files argument
             # DIGITAL SIGNALS
             digital_channels = demultiplex(curr_aux[sweep]['digitalScans'][0], numberDI)
             main_track_gate_chan = digital_channels[4]
@@ -198,36 +194,43 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
             ts_bench2p_frame_chan = get_timestamps(bench2p_frame_chan, sr)
             ts_bench2p_line_chan = get_timestamps(bench2p_line_chan, sr)
             ts_bench2p_vol_chan = get_timestamps(bench2p_vol_chan, sr)
-            ts_bench2p_HARP_gate = get_timestamps(bench2p_HARP_gate, sr)
-            
 
 
             """Analog signals"""
-            cam_trigger = curr_aux[sweep]['analogScans'][0]
-            bpod_trial_vis_chan = curr_aux[sweep]['analogScans'][1]
-            bpod_reward1_chan = curr_aux[sweep]['analogScans'][2]
-            bpod_tone_chan = curr_aux[sweep]['analogScans'][3]
-            light_flash_chan = curr_aux[sweep]['analogScans'][4]
+            cam_trigger = curr_aux[sweep]['analogScans'][2]
+            bonsai_vis_chan = curr_aux[sweep]['analogScans'][0]
+            bpod_speed_chan = curr_aux[sweep]['analogScans'][1]
             
             cam_trigger[-1] = 0
-            bpod_trial_vis_chan[-1] = 0
-            bpod_reward1_chan[-1] = 0
-            bpod_tone_chan[-1] = 0
-            light_flash_chan[-1] = 0
+            bonsai_vis_chan[-1] = 0
+            bpod_speed_chan[-1] = 0
 
             ts_cam_trigger = get_timestamps(cam_trigger, sr)
-            ts_bpod_visual = get_timestamps(bpod_trial_vis_chan, sr)
-            ts_bpod_reward = get_timestamps(bpod_reward1_chan, sr)
-            ts_bpod_tone = get_timestamps(bpod_tone_chan, sr)
-            ts_light_flash =  get_timestamps(light_flash_chan, sr)
+            ts_bonsai_vis = get_timestamps(bonsai_vis_chan, sr)
+            # ts_bpod_speed = get_timestamps(bpod_speed_chan, sr) #TR23: Data channel! Not Event channel!
             
-            # Insert timestamps into tables 
-            # - TR23: Why not define event type headers here?
-            event_types = ['main_track_gate', 'HARP_gate', 'shutter',  'mini2p_frames', 'mini2p_lines', 'mini2p_volumes', 'aux_cam', 'arena_LED',
-                        'aux_bpod_visual', 'aux_bpod_reward', 'aux_bpod_tone']
+            # Insert timestamps into tables             
             
-        elif aux_setup_type is "macroscope": #TR23 -  HEADFIXED Macroscope - #macroscope - needs to be set in scan schema! Connot be taken from userfunction_consolidate_files
+            event_types = {
+                'main_track_gate': ts_main_track_gate_chan,
+                'shutter': ts_shutter_chan,
+                'bench2p_frames': ts_bench2p_frame_chan,
+                'bench2p_lines': ts_bench2p_line_chan,
+                'bench2p_volumes': ts_bench2p_vol_chan,
+                'aux_cam': ts_cam_trigger,
+                'aux_bonsai_vis': ts_bonsai_vis,
+            }
+            
+            
+        elif aux_setup_type == "macroscope": #TR23 -  HEADFIXED Macroscope - #macroscope - needs to be set in scan schema! Connot be taken from userfunction_consolidate_files
             print("not done")
+        
+        
+        
+        # Insert into tables
+        for e in event_types:
+            event.EventType.insert1({'event_type': e, 'event_type_description': ''}, skip_duplicates=True)
+            print(e)
             
         for event_type, timestamps in event_types.items():
             to_insert = prepare_timestamps(timestamps, session_key, scan_key, event_type)
