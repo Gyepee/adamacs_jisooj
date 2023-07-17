@@ -13,7 +13,7 @@ import warnings
 import pathlib
 import re
 import pdb
-
+import pandas as pd
 
 def demultiplex(auxdata, channels=5):
     """Demultiplex the digital data"""
@@ -35,13 +35,13 @@ def get_timestamps(data, sr, thr=1):
 
 def prepare_timestamps(ts, session_key, scan_key, event_type):
     """Prepares timestamps for insert with datajoint"""
-    ts_shutter_chan_start = ts[0::2]
-    ts_shutter_chan_stop = ts[1::2]
+    ts_chan_start = ts[0::2]
+    ts_chan_stop = ts[1::2]
     
-    to_insert = [list(ts_shutter_chan_start), list(ts_shutter_chan_stop)]  
+    to_insert = [list(ts_chan_start), list(ts_chan_stop)]  
     to_insert = [[session_key, scan_key, event_type, *i] for i in zip(*to_insert)]  # transposes the list to get rows/cols right
-    if len(to_insert) != len(ts_shutter_chan_start):
-        to_insert.append([session_key, event_type, ts_shutter_chan_start[-1], ''])
+    if len(to_insert) != len(ts_chan_start):
+        to_insert.append([session_key, event_type, ts_chan_start[-1], ''])
 
     return to_insert
 
@@ -125,7 +125,7 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
             ts_main_track_gate_chan = get_timestamps(main_track_gate_chan, sr)
             ts_shutter_chan = get_timestamps(shutter_chan, sr)
             ts_mini2p_frame_chan = get_timestamps(mini2p_frame_chan, sr)
-            ts_mini2p_line_chan = get_timestamps(mini2p_line_chan, sr)
+            # ts_mini2p_line_chan = get_timestamps(mini2p_line_chan, sr)
             ts_mini2p_vol_chan = get_timestamps(mini2p_vol_chan, sr)
             ts_mini2p_HARP_gate = get_timestamps(mini2p_HARP_gate, sr)
             
@@ -162,7 +162,7 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
                 'arena_LED': ts_light_flash,
                 'shutter': ts_shutter_chan,
                 'mini2p_frames': ts_mini2p_frame_chan,
-                'mini2p_lines': ts_mini2p_line_chan,
+                # 'mini2p_lines': ts_mini2p_line_chan,
                 'mini2p_volumes': ts_mini2p_vol_chan,
                 'aux_cam': ts_cam_trigger,
                 'aux_bpod_visual': ts_bpod_visual,
@@ -173,6 +173,17 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
         elif aux_setup_type == "headfixed": #TR23 - HEADFIXED MINI2p - #mini2p01 - needs to be set in scan schema! Taken from userfunction_consolidate_files argument
             print("not done")
         elif aux_setup_type == "bench2p": #TR23 - HEADFIXED Bench2p - #bench2p - needs to be set in scan schema! Taken from userfunction_consolidate_files argument
+            
+            # LOAD STIMINFO
+            for k in scan_basenames:
+                stim_file_paths = [fp.as_posix() for fp in curr_path.glob('*bonsai_stimulus_events*.csv')]
+                if len(stim_file_paths) != 1:
+                    raise ValueError(f"More or less than 1 stim_files found in {k}")
+                # Load the csv file
+                df = pd.read_csv(stim_file_paths[0])
+                # Extract the third column
+            vis_stim_event_list = df['Value']
+            
             # DIGITAL SIGNALS
             digital_channels = demultiplex(curr_aux[sweep]['digitalScans'][0], numberDI)
             main_track_gate_chan = digital_channels[4]
@@ -192,7 +203,7 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
             ts_main_track_gate_chan = get_timestamps(main_track_gate_chan, sr)
             ts_shutter_chan = get_timestamps(shutter_chan, sr)
             ts_bench2p_frame_chan = get_timestamps(bench2p_frame_chan, sr)
-            ts_bench2p_line_chan = get_timestamps(bench2p_line_chan, sr)
+            # ts_bench2p_line_chan = get_timestamps(bench2p_line_chan, sr)
             ts_bench2p_vol_chan = get_timestamps(bench2p_vol_chan, sr)
 
 
@@ -215,11 +226,49 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
                 'main_track_gate': ts_main_track_gate_chan,
                 'shutter': ts_shutter_chan,
                 'bench2p_frames': ts_bench2p_frame_chan,
-                'bench2p_lines': ts_bench2p_line_chan,
+                # 'bench2p_lines': ts_bench2p_line_chan,
                 'bench2p_volumes': ts_bench2p_vol_chan,
                 'aux_cam': ts_cam_trigger,
                 'aux_bonsai_vis': ts_bonsai_vis,
             }
+            
+            j = 0
+            for stim_event in vis_stim_event_list:  
+                event_types[stim_event] = []
+            for i, stim_event in enumerate(vis_stim_event_list):  
+                event_types[stim_event] = np.append(event_types[stim_event], ts_bonsai_vis[j:j+2])
+                j += 2
+            
+            if len(vis_stim_event_list) != ts_bonsai_vis.size / 2:
+                print('Aux-File und StimLog have not the same number of stimulus onsets!')
+            #     print('Attempting repair - THIS IS A HACK! ARTIFICIALLY INTRODUCING STIMULUS ENDINGS IN FILE! MAKE SURE TO CRRECT THAT DURING ACQ!')
+                
+            #     ITI = np.sort(np.unique(np.round(np.diff(ts_bonsai_vis))))[1] #find stim duration
+            #     DUR = np.sort(np.unique(np.round(np.diff(ts_bonsai_vis))))[0] #find ITI duration
+                
+            #     block_edges = np.where(np.diff(ts_bonsai_vis)>ITI + 1) #find index of stim block edges
+            #     ts_bonsai_vis[block_edges]+ITI #add ITI duration
+                
+            #     on_off_values_insert = np.array(list(zip(ts_bonsai_vis[block_edges[0]]+DUR, ts_bonsai_vis[block_edges[0]]+DUR + ITI)))
+                
+            #     ts_bonsai_vis_corrected = ts_bonsai_vis
+                
+            #     index = block_edges[0] + 1
+            #     for value in on_off_values_insert:
+            #             ts_bonsai_vis_corrected = np.insert(ts_bonsai_vis_corrected, index, value)
+            #             index += len(value)
+
+                
+                # raise ValueError(f"Aux-File und StimLog have not the same number of stimulus onsets!{k}")
+                
+                
+            
+            # TODO
+            # - loop through start stop list
+            # - append unique dicitonary entry
+            # - try with complete example first.
+            # - write repair code for AI trace - set trace to 0 after certain stimulus duration!
+            
             
             
         elif aux_setup_type == "macroscope": #TR23 -  HEADFIXED Macroscope - #macroscope - needs to be set in scan schema! Connot be taken from userfunction_consolidate_files
