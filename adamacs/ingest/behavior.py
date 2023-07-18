@@ -26,7 +26,7 @@ def get_timestamps(data, sr, thr=1):
     if data.dtype == 'bool':
         data = data > 0.5
     else:
-        data = data > thr
+        data = np.abs(data) > thr #TR23: np.abs to cope with negative voltages
     
     diff = np.diff(data)
     idc = np.argwhere(diff != 0)[:, 0]
