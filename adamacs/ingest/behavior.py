@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from pywavesurfer import ws
 from ..paths import get_imaging_root_data_dir
 from element_interface.utils import find_full_path
-from adamacs.pipeline import event, trial
+from adamacs.pipeline import event, trial, scan
 import warnings
 import pathlib
 import re
@@ -229,7 +229,7 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
                 # 'bench2p_lines': ts_bench2p_line_chan,
                 'bench2p_volumes': ts_bench2p_vol_chan,
                 'aux_cam': ts_cam_trigger,
-                'aux_bonsai_vis': ts_bonsai_vis,
+                # 'aux_bonsai_vis': ts_bonsai_vis,
             }
             
             j = 0
@@ -261,14 +261,6 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
                 
                 # raise ValueError(f"Aux-File und StimLog have not the same number of stimulus onsets!{k}")
                 
-                
-            
-            # TODO
-            # - loop through start stop list
-            # - append unique dicitonary entry
-            # - try with complete example first.
-            # - write repair code for AI trace - set trace to 0 after certain stimulus duration!
-            
             
             
         elif aux_setup_type == "macroscope": #TR23 -  HEADFIXED Macroscope - #macroscope - needs to be set in scan schema! Connot be taken from userfunction_consolidate_files
@@ -279,12 +271,42 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
         # Insert into tables
         for e in event_types:
             event.EventType.insert1({'event_type': e, 'event_type_description': ''}, skip_duplicates=True)
-            print(e)
             
         for event_type, timestamps in event_types.items():
             to_insert = prepare_timestamps(timestamps, session_key, scan_key, event_type)
             event.Event.insert(to_insert, skip_duplicates=True, allow_direct_insert=True)
         
-
+ 
         
+def get_and_ingest_trial_times(scan_key, aux_setup_type):                   
+    session_key = (scan.Scan & f'scan_id = "{scan_key}"').fetch('session_id')[0]
+    scan_key_key = (scan.Scan & f'scan_id = "{scan_key}"').fetch('KEY')[0]         
+              
+    if aux_setup_type == "bench2p":
+                    
+        # Extract Trials 
+        
+            
+        stims_per_trial = len(set((event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_type")))
+        # all_stims = (event.Event & scan_key & 'event_type LIKE "%;%"').fetch("event_type")
+        # trial_stims = {x: list(all_stims).count(x) for x in all_stims}
+        # trials = set([list(all_stims).count(x) for x in all_stims])
+        
+        trial_start_edges = (event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_start_time",order_by = "event_start_time")[::stims_per_trial] 
+        trial_end_edges = (event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_end_time",order_by = "event_end_time")[stims_per_trial-1::stims_per_trial]     
+            
+        trial_event_name = (event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_type")[0].split(':')[0]
+        trial.TrialType().insert1({'trial_type': trial_event_name, 'trial_type_description': 'Stimulus nomenclature: Type; Class; Azimuth; Elevation; Size; Orientation; Spatial Frequency; Temporal Frequency'}, skip_duplicates=True)
+                
+        for trialnum in enumerate(trial_start_edges):
+            trial.Trial.insert1({'session_id': session_key, 'scan_id': scan_key, 'trial_id': trialnum[0]+1, 'trial_type': trial_event_name, 'trial_start_time': trial_start_edges[trialnum[0]], 'trial_stop_time': trial_end_edges[trialnum[0]]},  allow_direct_insert=True, skip_duplicates=True)
+            
+            # generate query object from joint Trial Event table
+            TrialEvent_query_keys = (event.Event * trial.Trial & scan_key_key & f'event_type LIKE "%;%"' & f'event_start_time <= "{trial_end_edges[trialnum[0]]}"' & f'event_end_time >= "{trial_start_edges[trialnum[0]]}"' & f'trial_id= "{trialnum[0] + 1}"') #.fetch(format = "frame", order_by = "event_start_time")
+            
+            # do server-side insert - fetch does not work. The number key seems to be rounded.
+            trial.TrialEvent.insert(TrialEvent_query_keys,  allow_direct_insert=True, skip_duplicates=True, ignore_extra_fields=True)
+
+                
+
         
