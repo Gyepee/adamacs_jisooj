@@ -53,7 +53,7 @@ class Bpodfile(object):
         return self._trials[idx]
 
     def _aux_timestamps(self):
-        aux_paths = list(self._bpod_path_full.parent.glob("*h5"))
+        aux_paths = list(self._bpod_path_full.parent.glob("*.h5"))
         assert len(aux_paths) == 1, f"Found more than one Aux h5 file\n{aux_paths}"
         print(aux_paths[0])
         aux = Auxfile(aux_paths[0])
@@ -66,7 +66,7 @@ class Bpodfile(object):
         )
         return aux_trials, aux_rewards
 
-    def ingest(self, prompt=True):
+    def ingest(self, session_id, scan_id, prompt=True):
         """Ingest BPod data to session, event, and trial tables.
 
         :param prompt (bool): Optional, default True. Prompt with metadata before entry.
@@ -87,9 +87,10 @@ class Bpodfile(object):
         # ------------------------------- Some constants -------------------------------
         # TR23: this will not work. We do not use a numeric session_id. TODO: change to SessionHash (to get from imaging - or redo)
 
-        session_id = (  # increment previous session id by 1
-            dj.U().aggr(session.Session, n="max(session_id)").fetch("n") or 0
-        ) + 1
+        # session_id = (  # increment previous session id by 1
+        #     dj.U().aggr(session.Session, n="max(session_id)").fetch("n") or 0
+        # ) + 1
+        
         bpod_version = self.session_data["Info"]["StateMachineVersion"].split(" ")[-1]
         aux_trials, aux_rewards = self._aux_timestamps()
 
@@ -101,6 +102,7 @@ class Bpodfile(object):
         }
         behavior_recording_key = {
             "session_id": session_id,
+            "scan_id": scan_id,
             "recording_start_time": self.start_time,
             "recording_duration": sum(
                 # removes time between trials, following example matlab code
@@ -111,6 +113,7 @@ class Bpodfile(object):
         }
         behavior_recording_fp_key = {
             "session_id": session_id,
+            "scan_id": scan_id,
             "filepath": self._bpod_path_relative,
         }
         trial_type_keys = [
@@ -124,6 +127,7 @@ class Bpodfile(object):
         trial_keys = [
             {
                 "session_id": session_id,
+                "scan_id": scan_id,
                 "trial_id": n,
                 "trial_type": self.trial(n).type,
                 "trial_start_time": aux_trials[n],
@@ -134,6 +138,7 @@ class Bpodfile(object):
         trial_attributes_keys = [
             {
                 "session_id": session_id,
+                "scan_id": scan_id,
                 "trial_id": n,
                 "attribute_name": attrib,
                 "attribute_value": self.trial(n).attributes[attrib],
@@ -153,6 +158,7 @@ class Bpodfile(object):
         event_keys = [
             {
                 "session_id": session_id,
+                "scan_id": scan_id,
                 "trial_id": n,
                 "event_type": event,
                 "event_start_time": aux_trials[n] + event_start,
@@ -165,6 +171,7 @@ class Bpodfile(object):
             [  # add reward times from aux
                 {
                     "session_id": session_id,
+                    "scan_id": scan_id,
                     "trial_id": bisect(aux_trials, reward) - 1,  # finds trial ID
                     "event_type": "reward",
                     "event_start_time": reward,
