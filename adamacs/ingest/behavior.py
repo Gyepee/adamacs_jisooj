@@ -210,11 +210,11 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
             """Analog signals"""
             cam_trigger = curr_aux[sweep]['analogScans'][2]
             bonsai_vis_chan = curr_aux[sweep]['analogScans'][0]
-            bpod_speed_chan = curr_aux[sweep]['analogScans'][1]
+            # bpod_speed_chan = curr_aux[sweep]['analogScans'][1]
             
             cam_trigger[-1] = 0
             bonsai_vis_chan[-1] = 0
-            bpod_speed_chan[-1] = 0
+            # bpod_speed_chan[-1] = 0
 
             ts_cam_trigger = get_timestamps(cam_trigger, sr)
             ts_bonsai_vis = get_timestamps(bonsai_vis_chan, sr)
@@ -308,5 +308,26 @@ def get_and_ingest_trial_times(scan_key, aux_setup_type):
             trial.TrialEvent.insert(TrialEvent_query_keys,  allow_direct_insert=True, skip_duplicates=True, ignore_extra_fields=True)
 
                 
-
+def compute_angular_velocity(time, angle, window):
+    # Convert the angles to radians
+    angle = np.radians(angle)
+    
+    # Unwrap the angles to handle wrap-around
+    unwrapped_angle = np.unwrap(angle)
+    
+    # Convert back to degrees
+    unwrapped_angle = np.abs(np.degrees(unwrapped_angle))
+    
+    # Calculate rolling mean with the defined window size
+    unwrapped_angle_smoothed = np.convolve(unwrapped_angle, np.ones(window), 'valid') / window
+    
+    
+    # Calculate the difference in angles and time
+    angle_diff = np.diff(unwrapped_angle_smoothed)
+    time_diff = np.diff(time)
+    
+    # Calculate angular velocity
+    angular_velocity_smoothed = angle_diff / time_diff[:-window+1]
+    
+    return angular_velocity_smoothed, unwrapped_angle_smoothed
         
