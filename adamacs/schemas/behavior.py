@@ -53,8 +53,8 @@ class HarpRecording(dj.Imported):
         bpod_path_relative = (event.BehaviorRecording.File & key).fetch1("filepath")
         harp_paths = list(find_full_path(
             get_experiment_root_data_dir(), bpod_path_relative
-        ).parent.glob("*harp*.bin"))
-        assert len(harp_paths) == 1, f"Found more than one harp file\n\t{harp_paths}"
+        ).parent.glob("*IMU_harp*csv"))
+        assert len(harp_paths) == 1, f"Found less or more than one harp file\n\t{harp_paths}"
 
         self.insert1(key)
         self.Channel.insert(
