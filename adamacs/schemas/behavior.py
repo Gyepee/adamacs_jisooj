@@ -8,7 +8,7 @@ raw data and relates them to the Recording.
 import datajoint as dj
 from ..pipeline import session, event, db_prefix
 from ..paths import get_experiment_root_data_dir
-from ..ingest.harp import HarpLoader
+from ..ingest.harp import HarpLoader, HarpLoader_sync
 from element_interface.utils import find_full_path
 from pywavesurfer import ws
 import numpy as np
@@ -56,13 +56,26 @@ class HarpRecording(dj.Imported):
         ).parent.glob("*IMU_harp*csv"))
         assert len(harp_paths) == 1, f"Found less or more than one harp file\n\t{harp_paths}"
 
-        self.insert1(key)
+        IMU_data = HarpLoader(harp_paths[0]).data_for_insert()
+        
+        bpod_path_relative = (event.BehaviorRecording.File & key).fetch1("filepath")
+        harp_paths = list(find_full_path(
+            get_experiment_root_data_dir(), bpod_path_relative
+        ).parent.glob("*2Pframes_harp*csv"))
+        assert len(harp_paths) == 1, f"Found less or more than one harp file\n\t{harp_paths}"
+
+        IMU_sync_data = HarpLoader_sync(harp_paths[0]).data_for_insert()
+        
+        insert_data = IMU_data + IMU_sync_data
+        
+        self.insert1(key, skip_duplicates=True)
         self.Channel.insert(
             [
                 {**key, **channel} 
-                for channel in HarpLoader(harp_paths[0]).data_for_insert()
+                for channel in insert_data
             ]
         )
+        
 
 @schema
 class TreadmillDevice(dj.Lookup):

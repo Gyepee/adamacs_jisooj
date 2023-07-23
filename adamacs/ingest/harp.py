@@ -3,6 +3,7 @@ from element_interface.utils import find_full_path, find_root_directory
 from adamacs.paths import get_experiment_root_data_dir
 from pathlib import Path
 import pandas as pd
+from datetime import datetime
 
 class HarpLoader:
     def __init__(self, harp_path):
@@ -167,24 +168,63 @@ class HarpLoader:
             },
         ]
 
-    def data_as_pandas(self):
-        import pandas as pd
+    # def data_as_pandas(self):
+    #     import pandas as pd
 
-        self._data_dict = {
-            "34_time": self._reg34time,
-            "34_data": self._reg34data,
-            "35_time": self._reg35time,
-            "35_data": self._reg35data,
-            "35_DI0_": self._reg35DI0,
-            "35_DI1_": self._reg35DI1,
-        }
+    #     self._data_dict = {
+    #         "34_time": self._reg34time,
+    #         "34_data": self._reg34data,
+    #         "35_time": self._reg35time,
+    #         "35_data": self._reg35data,
+    #         "35_DI0_": self._reg35DI0,
+    #         "35_DI1_": self._reg35DI1,
+    #     }
 
-        return pd.DataFrame(
-            dict([(k, pd.Series(v)) for k, v in self._data_dict.items()])
-        )
+    #     return pd.DataFrame(
+    #         dict([(k, pd.Series(v)) for k, v in self._data_dict.items()])
+    #     )
 
 
 # ------------ Helper functions ------------
+
+class HarpLoader_sync:
+    def __init__(self, harp_sync_path):
+        self.harp_sync_path = Path(harp_sync_path)
+        if not self.harp_sync_path.exists():
+            self._harp_sync_path_full = find_full_path(
+                get_experiment_root_data_dir(), harp_sync_path
+            )
+        else:
+            self._harp_sync_path_full = Path(harp_sync_path)
+        self._harp_sync_path_relative = self._harp_sync_path_full.relative_to(
+            find_root_directory(get_experiment_root_data_dir(), self._harp_sync_path_full)
+        )
+
+        self._harp_sync_file = pd.read_csv(self._harp_sync_path_full, header=None)
+
+
+    def data(self):
+        return self._data_dict
+
+    def data_for_insert(self):
+        
+        # Convert the string to a datetime
+        dt = pd.to_datetime(self._harp_sync_file[1].to_numpy())
+
+        # Convert the datetime to UTC
+        dt_utc = dt.tz_convert('UTC')
+
+        # Get the Unix timestamp in milliseconds
+        unix_timestamp_ms = dt_utc.astype(int) // 10**6
+        time = unix_timestamp_ms - unix_timestamp_ms[0]   # subtract by AUX event HARP gate
+             
+        return [
+            {
+                "channel_name": "2p sync",
+                "data": self._harp_sync_file[0].to_numpy(),
+                "time": time.to_numpy(),
+            },
+        ]
 
 
 def set_bit(value, bit):
@@ -197,3 +237,4 @@ def clear_bit(value, bit):
 
 def bitget(value, bit_no):
     return (value >> bit_no) & 1
+
