@@ -50,32 +50,35 @@ class HarpRecording(dj.Imported):
         """
 
     def make(self, key):
-        bpod_path_relative = (event.BehaviorRecording.File & key).fetch1("filepath")
-        harp_paths = list(find_full_path(
-            get_experiment_root_data_dir(), bpod_path_relative
-        ).parent.glob("*IMU_harp*csv"))
-        assert len(harp_paths) == 1, f"Found less or more than one harp file\n\t{harp_paths}"
+        print(key)
+                
+        try:
+            bpod_path_relative = (event.BehaviorRecording.File & key).fetch1("filepath")
+            harp_paths = list(find_full_path(
+                get_experiment_root_data_dir(), bpod_path_relative
+            ).parent.glob("*IMU_harp*csv"))
+            assert len(harp_paths) == 1, f"Found less or more than one harp file\n\t{harp_paths}"
 
-        IMU_data = HarpLoader(harp_paths[0]).data_for_insert()
-        
-        bpod_path_relative = (event.BehaviorRecording.File & key).fetch1("filepath")
-        harp_paths = list(find_full_path(
-            get_experiment_root_data_dir(), bpod_path_relative
-        ).parent.glob("*2Pframes_harp*csv"))
-        assert len(harp_paths) == 1, f"Found less or more than one harp file\n\t{harp_paths}"
+            IMU_data = HarpLoader(harp_paths[0]).data_for_insert()
+            
+            bpod_path_relative = (event.BehaviorRecording.File & key).fetch1("filepath")
+            harp_paths = list(find_full_path(
+                get_experiment_root_data_dir(), bpod_path_relative
+            ).parent.glob("*2Pframes_harp*csv"))
+            assert len(harp_paths) == 1, f"Found less or more than one harp file\n\t{harp_paths}"
 
-        IMU_sync_data = HarpLoader_sync(harp_paths[0]).data_for_insert()
-        
-        insert_data = IMU_data + IMU_sync_data
-        
-        self.insert1(key, skip_duplicates=True)
-        self.Channel.insert(
-            [
-                {**key, **channel} 
-                for channel in insert_data
-            ]
-        )
-        
+            IMU_sync_data = HarpLoader_sync(harp_paths[0]).data_for_insert()
+            
+            insert_data = IMU_data + IMU_sync_data
+            self.insert1(key, skip_duplicates=True)
+            self.Channel.insert(
+                [
+                    {**key, **channel} 
+                    for channel in insert_data
+                ]
+            )
+        except:
+            print("HARP file ingest crashed")
 
 @schema
 class TreadmillDevice(dj.Lookup):
