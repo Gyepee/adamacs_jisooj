@@ -6,9 +6,10 @@ import numpy as np
 import h5py
 import matplotlib.pyplot as plt
 from pywavesurfer import ws
-from ..paths import get_imaging_root_data_dir
+from ..paths import get_imaging_root_data_dir, get_experiment_root_data_dir
 from element_interface.utils import find_full_path
 from adamacs.pipeline import event, trial, scan
+from adamacs.ingest.bpod import Bpodfile
 import warnings
 import pathlib
 import re
@@ -45,6 +46,20 @@ def prepare_timestamps(ts, session_key, scan_key, event_type):
 
     return to_insert
 
+def ingest_bpod(sessi, scansi, root_paths=get_imaging_root_data_dir(), aux_setup_type = "openfield",
+                        verbose=False): #TR23: included scan key, included setupID
+     
+    if not verbose:
+        warnings.filterwarnings('ignore')
+    scan_key = (scan.Scan & f'scan_id = "{scansi}"').fetch('KEY')[0]
+    bpod_path_relative = (scan.ScanPath & scan_key).fetch("path")[0]
+    bpod_path_full = list(find_full_path(
+        get_experiment_root_data_dir(), bpod_path_relative
+        ).glob("*mat"))[0]
+    bpod_object = Bpodfile(bpod_path_full)
+    bpod_object.ingest(sessi, scansi)
+
+        
 def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), aux_setup_type = "openfield",
                         verbose=False): #TR23: included scan key, included setupID
      

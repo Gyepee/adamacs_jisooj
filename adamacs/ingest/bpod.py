@@ -58,15 +58,15 @@ class Bpodfile(object):
         print(aux_paths[0])
         aux = Auxfile(aux_paths[0])
         aux_onset = aux.main_track_gate  # master trigger
-        aux_trials = aux.bpod_channels["trial"] - aux_onset  # trial times wrt trigger
-        aux_rewards = aux.bpod_channels["reward"] - aux_onset  # rewards wrt trigger
+        aux_trials = aux.bpod_channels["trial"]  # - aux_onset  # trial times wrt trigger
+        aux_rewards = aux.bpod_channels["reward"] # - aux_onset  # rewards wrt trigger
         assert len(aux_trials) == self.n_trials, (
             "Number of trials do not match: "
             + f"BPod {self.n_trials} vs. Aux {len(aux_trials)}"
         )
         return aux_trials, aux_rewards
 
-    def ingest(self, session_id, scan_id, prompt=True):
+    def ingest(self, session_id, scan_id, prompt=False):
         """Ingest BPod data to session, event, and trial tables.
 
         :param prompt (bool): Optional, default True. Prompt with metadata before entry.
@@ -130,8 +130,8 @@ class Bpodfile(object):
                 "scan_id": scan_id,
                 "trial_id": n,
                 "trial_type": self.trial(n).type,
-                "trial_start_time": aux_trials[n],
-                "trial_stop_time": aux_trials[n] + self.trial(n).duration,
+                "trial_start_time": aux_trials[n] + self.trial(n).events['bpod_cue'],     #TR23: Update to cue onset time! has to be taken 
+                "trial_stop_time": aux_trials[n] + self.trial(n).events['bpod_cue'] + self.trial(n).duration,
             }
             for n in range(self.n_trials)
         ]
@@ -155,6 +155,9 @@ class Bpodfile(object):
                 for event_type in self.trial(n).events
             )
         ]
+        event_type_keys.extend([
+            {"event_type": "aux_reward"}
+        ])
         event_keys = [
             {
                 "session_id": session_id,
@@ -165,7 +168,7 @@ class Bpodfile(object):
             }
             for n in range(self.n_trials)
             for event, event_start in self.trial(n).events.items()
-            if event_start
+            if event_start is not None
         ]
         event_keys.extend(
             [  # add reward times from aux
@@ -173,7 +176,7 @@ class Bpodfile(object):
                     "session_id": session_id,
                     "scan_id": scan_id,
                     "trial_id": bisect(aux_trials, reward) - 1,  # finds trial ID
-                    "event_type": "reward",
+                    "event_type": "aux_reward",
                     "event_start_time": reward,
                 }
                 for reward in aux_rewards
@@ -256,7 +259,7 @@ class Trial(object):
         # clean up bpod port events
         self._raw_events = self._trial_data[self._idx]["Events"]
         self._ports_in = {
-            f"bpod_in_port_{port[4:-2]}": self._raw_events[port]  # e.g., in_port_2: 8.3
+            f"bpod_{port}": self._raw_events[port]  - self._states.get("WaitForPosTriggerSoftCode", [None])[1] # e.g., in_port_2: 8.3
             for port in self._raw_events
             if "In" in port
         }
@@ -284,18 +287,18 @@ class Trial(object):
         """Returns trial events as a dict {event_type: event_time} WRT trial start"""
         if not self._events:
             self._events = {
-                "bpod_cue": self._states.get("CueDelay", [None])[0],
-                "bpod_at_target": self._resp_delay[0] if self._resp_delay[0] else None,
-                "bpod_at_port": self._time_to_port,
+                "bpod_cue": self._states.get("WaitForPosTriggerSoftCode", [None])[0] - self._states.get("WaitForPosTriggerSoftCode", [None])[1],
+                "bpod_at_target": self._states.get("WaitForPosTriggerSoftCode", [None])[1] - self._states.get("WaitForPosTriggerSoftCode", [None])[1],
+                "bpod_at_port": self._time_to_port if self._states.get("Drinking", [None])[0] else None,
                 "bpod_reward": (
                     # NOTE: Now taking reward events from Aux - TR23: uncommented block to prevent foreign key constraint error
                     self._time_to_port
                     + self._session_data["TrialSettings"][0]["GUI"]["RewardDelay"]
-                    if self._time_to_port
+                    if self._states.get("Drinking", [None])[0]
                     else None
                 ),
                 **self._ports_in,
-                "bpod_drinking": self._states.get("Drinking", [None])[0],
+                "bpod_drinking": self._states.get("Drinking", [None])[0]- self._states.get("WaitForPosTriggerSoftCode", [None])[1] if self._states.get("Drinking", [None])[0] else None,
             }
         return self._events
 
