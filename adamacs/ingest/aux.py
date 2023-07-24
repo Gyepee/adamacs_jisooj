@@ -42,7 +42,7 @@ class Auxfile(object):
         self._bpod = {}
 
     @property
-    def _digital(self, channels=5):  # this process could be time-consuming
+    def _digital(self, channels=6):  # this process could be time-consuming
         if len(self._digital_channels) == 0:
             auxdata = self._raw[self._sweep]["digitalScans"][0].flatten()
             binary = [[int(x) for x in f"{x:0{channels}b}"] for x in auxdata]
@@ -53,14 +53,14 @@ class Auxfile(object):
     def main_track_gate(self):
         """Main track gate start time"""
         if not self._gate:
-            self._gate = get_timestamps(self._digital[4], self._sample_rate)[0]
+            self._gate = get_timestamps(self._digital[5], self._sample_rate)[0]
         return self._gate
 
     @property
     def shutter_timestamps(self):
         """Laser shutter"""
         if not any(self._shutter):
-            self._shutter = get_timestamps(self._digital[3], self._sample_rate)
+            self._shutter = get_timestamps(self._digital[4], self._sample_rate)
         return self._shutter
 
     @property
@@ -68,9 +68,9 @@ class Auxfile(object):
         """Dict of arrays for frame, line and volume"""
         if not any(self._2p):
             self._2p = {  # vol and frame are the same in sample data
-                "frame": get_timestamps(self._digital[2], self._sample_rate),
-                "line": get_timestamps(self._digital[1], self._sample_rate),
-                "volume": get_timestamps(self._digital[0], self._sample_rate),
+                "frame": get_timestamps(self._digital[3], self._sample_rate),
+                "line": get_timestamps(self._digital[2], self._sample_rate),
+                "volume": get_timestamps(self._digital[1], self._sample_rate),
             }
         return self._2p
 

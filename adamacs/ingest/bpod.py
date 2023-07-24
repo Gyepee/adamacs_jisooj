@@ -202,8 +202,8 @@ class Bpodfile(object):
         # ----------------------------- Insert to schemas -----------------------------
         with session.Session.connection.transaction:
             session.Session.insert1(session_key, skip_duplicates=True)  # remove skip
-            event.BehaviorRecording.insert1(behavior_recording_key)
-            event.BehaviorRecording.File.insert1(behavior_recording_fp_key)
+            event.BehaviorRecording.insert1(behavior_recording_key, skip_duplicates=True)
+            event.BehaviorRecording.File.insert1(behavior_recording_fp_key, skip_duplicates=True)
             trial.TrialType.insert(trial_type_keys, skip_duplicates=True)
             trial.Trial.insert(trial_keys, allow_direct_insert=True)
             trial.Trial.Attribute.insert(
@@ -256,7 +256,7 @@ class Trial(object):
         # clean up bpod port events
         self._raw_events = self._trial_data[self._idx]["Events"]
         self._ports_in = {
-            f"in_port_{port[4:-2]}": self._raw_events[port]  # e.g., in_port_2: 8.3
+            f"bpod_in_port_{port[4:-2]}": self._raw_events[port]  # e.g., in_port_2: 8.3
             for port in self._raw_events
             if "In" in port
         }
@@ -284,10 +284,10 @@ class Trial(object):
         """Returns trial events as a dict {event_type: event_time} WRT trial start"""
         if not self._events:
             self._events = {
-                "cue": self._states.get("CueDelay", [None])[0],
-                "at_target": self._resp_delay[0] if self._resp_delay[0] else None,
-                "at_port": self._time_to_port,
-                "reward": (
+                "bpod_cue": self._states.get("CueDelay", [None])[0],
+                "bpod_at_target": self._resp_delay[0] if self._resp_delay[0] else None,
+                "bpod_at_port": self._time_to_port,
+                "bpod_reward": (
                     # NOTE: Now taking reward events from Aux - TR23: uncommented block to prevent foreign key constraint error
                     self._time_to_port
                     + self._session_data["TrialSettings"][0]["GUI"]["RewardDelay"]
@@ -295,7 +295,7 @@ class Trial(object):
                     else None
                 ),
                 **self._ports_in,
-                "drinking": self._states.get("Drinking", [None])[0],
+                "bpod_drinking": self._states.get("Drinking", [None])[0],
             }
         return self._events
 
