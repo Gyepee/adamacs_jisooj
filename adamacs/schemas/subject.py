@@ -120,3 +120,35 @@ class SubjectDeath(dj.Manual):
     death_date      : date
     cause           : varchar(255)
     """
+
+
+lab_key = 'Rose'  # Short, unique identifier for the lab. Maximum 8 characters. Example: 'Rose'.
+lab_name = 'Circut Mechanisms of Behavior'  # A longer, more descriptive name for the laboratory.
+institution = 'Institute for Experimental Epileptology and Cognition Research (IEECR)'  # The institution the laboratory belongs to.
+address = 'Venusberg-Campus 1, 53127 Bonn'  # The postal address of the laboratory.
+
+Lab.insert1((lab_key, lab_name, institution, address), skip_duplicates=True)
+
+user_data = [{'user_id': 1, 'name': 'Rose Tobias', 'initials': 'TR', 'shorthand': 'tobiasr', 'email': 'trose@uni-bonn.de', 'lab': 'Rose'},
+        {'user_id': 2, 'name': 'Kück Laura', 'initials': 'LK', 'shorthand': 'laurak', 'email': 'laura.kueck@ukbonn.de', 'lab': 'Rose'},
+        {'user_id': 3, 'name': 'Krasilshchikova Natalia', 'initials': 'NK', 'shorthand': 'nataliak', 'email': ' nkra1@uni-bonn.de', 'lab': 'Rose'},
+        {'user_id': 4, 'name': 'Bühler Daniel', 'initials': 'DB', 'shorthand': 'danielb', 'email': 'Db247@uni-bonn.de', 'lab': 'Rose'},
+        {'user_id': 5, 'name': 'Luxem Kevin', 'initials': 'KL', 'shorthand': 'kevinl', 'email': 'luxemk@uni-bonn.de', 'lab': 'Rose'},
+        {'user_id': 6, 'name': 'Jung Jisoo', 'initials': 'JJ', 'shorthand': 'jisooj', 'email': 'jjun1@uni-bonn.de', 'lab': 'Rose'},
+        {'user_id': 7, 'name': 'Narayanamurthy Rukhmani', 'initials': 'RN', 'shorthand': 'rukhun', 'email': 'rnar@uni-bonn.de', 'lab': 'Rose'},
+        {'user_id': 8, 'name': 'Kremers Leon', 'initials': 'LE', 'shorthand': 'leonk', 'email': 'leon.kremers@uni-bonn.de', 'lab': 'Rose'},
+        {'user_id': 9, 'name': 'Asma Mekhnache', 'initials': 'AM', 'shorthand': 'asmam', 'email': 's4asmekh@uni-bonn.de', 'lab': 'Rose'},
+        {'user_id': 10, 'name': 'Aelton Araujo', 'initials': 'AA', 'shorthand': 'aeltona', 'email': 'aara@uni-bonn.de', 'lab': 'Rose'}]
+User.insert(user_data, skip_duplicates=True) 
+
+project_data = [{'project': 'hpc-repstab', 'project_description': 'hpc-representational-stability' },
+        {'project': 'vc-lgn-repstab', 'project_description': 'vc-lgn-representational-stability'},
+        {'project': 'rsc-functop', 'project_description': 'rsc-functional-topography'},
+        {'project': 'rsc-hpc', 'project_description': 'rsc-hippocampal'},
+        {'project': 'sc-lgn-actvis', 'project_description': 'sc-lgn-active-vision'},
+        {'project': 'ATN', 'project_description': 'ATN-functional-characterization'},
+        {'project': 'rsc-latent', 'project_description': 'rsc-contextual-multimodal-latent-ss'},
+        {'project': 'V1-oddball', 'project_description': 'v1-oddball-predicitve-prior'},
+        {'project': 'dummy', 'project_description': 'dummy'}
+        ]
+Project.insert(project_data, skip_duplicates=True) 

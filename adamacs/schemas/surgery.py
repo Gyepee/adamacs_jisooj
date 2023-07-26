@@ -146,3 +146,15 @@ class AnatomicalLocation(dj.Manual):
     definition = """
     anatomical_location    : varchar(16)
     """
+
+
+anatomical_data = [{'anatomical_location': 'V1'},
+        {'anatomical_location': 'LGNV1'},
+        {'anatomical_location': 'ATN'},
+        {'anatomical_location': 'RSCa'},
+        {'anatomical_location': 'RSCg'},
+        {'anatomical_location': 'dCA1'},
+        {'anatomical_location': 'DG'},
+        {'anatomical_location': 'Ctx'},
+        {'anatomical_location': 'dummy'}]
+AnatomicalLocation.insert(data, skip_duplicates=True) 
