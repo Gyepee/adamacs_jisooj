@@ -76,6 +76,7 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
     n_aux = len(match_paths)
     if verbose:
         print(f'Number of aux-files found: {n_aux}')
+        print(match_paths)
 
     scan_pattern = "scan.{8}"
     basenames = [x.name for x in match_paths]
