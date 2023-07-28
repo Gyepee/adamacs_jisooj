@@ -71,7 +71,7 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
     match_paths = []
     for p in valid_paths:
         # match_paths.extend(list(p.rglob(f'*{session_key}*')))
-        match_paths.extend([d for d in p.rglob(f'*{scan_key}*') if d.is_dir()]) #TR23: limit to dirs only
+        match_paths.extend([d for d in p.rglob(f'*{scan_key}*{session_key}*') if d.is_dir()]) #TR23: limit to dirs only
     
     n_aux = len(match_paths)
     if verbose:
