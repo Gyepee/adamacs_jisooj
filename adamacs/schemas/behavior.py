@@ -50,7 +50,6 @@ class HarpRecording(dj.Imported):
         """
 
     def make(self, key):
-        print(key)
                 
         try:
             bpod_path_relative = (event.BehaviorRecording.File & key).fetch1("filepath")
@@ -78,7 +77,7 @@ class HarpRecording(dj.Imported):
                 ]
             )
         except:
-            print("HARP file ingest crashed")
+            print('Failed to ingest HARP IMU data')    
 
 @schema
 class TreadmillDevice(dj.Lookup):
