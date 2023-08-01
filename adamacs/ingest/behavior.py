@@ -194,11 +194,14 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
             for k in scan_basenames:
                 stim_file_paths = [fp.as_posix() for fp in curr_path.glob('*bonsai_stimulus_events*.csv')]
                 if len(stim_file_paths) != 1:
-                    raise ValueError(f"More or less than 1 stim_files found in {k}")
-                # Load the csv file
-                df = pd.read_csv(stim_file_paths[0])
-                # Extract the third column
-            vis_stim_event_list = df['Value']
+                    # raise ValueError(f"More or less than 1 stim_files found in {k}")
+                    print(f"More or less than 1 stim_files found in {k} - not extracting stim IDs")
+                    vis_stim_event_list = []
+                else:
+                    # Load the csv file
+                    df = pd.read_csv(stim_file_paths[0])
+                    # Extract the third column
+                    vis_stim_event_list = df['Value']
             
             # DIGITAL SIGNALS
             digital_channels = demultiplex(curr_aux[sweep]['digitalScans'][0], numberDI)
