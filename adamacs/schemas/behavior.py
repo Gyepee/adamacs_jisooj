@@ -77,7 +77,7 @@ class HarpRecording(dj.Imported):
                 ]
             )
         except:
-            print('Failed to ingest HARP IMU data')    
+            print(f'Failed to ingest HARP IMU data for {key}')    
 
 @schema
 class TreadmillDevice(dj.Lookup):
