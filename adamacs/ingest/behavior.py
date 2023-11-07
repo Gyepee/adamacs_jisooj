@@ -119,7 +119,7 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
         numberDI = len(curr_aux['header']['DIChannelNames'])
         timebase = np.arange(curr_aux[sweep]['analogScans'].shape[1]) / sr
 
-        if aux_setup_type == "openfield":
+        if aux_setup_type == "mini2p1_openfield":
             # DIGITAL SIGNALS
             digital_channels = demultiplex(curr_aux[sweep]['digitalScans'][0], numberDI)
             main_track_gate_chan = digital_channels[5]
