@@ -60,6 +60,14 @@ class Bpodfile(object):
         aux_onset = aux.main_track_gate  # master trigger
         aux_trials = aux.bpod_channels["trial"]  # - aux_onset  # trial times wrt trigger
         aux_rewards = aux.bpod_channels["reward"] # - aux_onset  # rewards wrt trigger
+
+        #TR23: BPod cam start earlier and end later than actual recording. We need to find the first and last BPOD trial that has a valid timestamp
+        #Problem: BNClow does not seem to be in all recordings.
+        trials = bpod_object.trial_data
+        BNC1Low_events = [(i, trial['Events'].get('BNC1Low')) for i, trial in enumerate(trials) if 'BNC1Low' in trial['Events']] # get all trials that have a BNC1Low event. Returns a list of tuples (trial number, event time)
+
+        bpod_aux_starttrial = BNC1Low_events[0][0] + 1 # +1 because we want the trial that FOLLOWS the darkframe onset because the darkframe precedes the first recorded AUX trial
+
         assert len(aux_trials) == self.n_trials, (
             "Number of trials do not match: "
             + f"BPod {self.n_trials} vs. Aux {len(aux_trials)}"
