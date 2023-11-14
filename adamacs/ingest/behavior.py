@@ -119,14 +119,14 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
         numberDI = len(curr_aux['header']['DIChannelNames'])
         timebase = np.arange(curr_aux[sweep]['analogScans'].shape[1]) / sr
 
-        if aux_setup_type == "mini2p1_openfield":
+        if aux_setup_type == "mini2p1_openfield" or aux_setup_type == "openfield":
             # DIGITAL SIGNALS
             digital_channels = demultiplex(curr_aux[sweep]['digitalScans'][0], numberDI)
             main_track_gate_chan = digital_channels[5]
             shutter_chan = digital_channels[4]
-            mini2p_frame_chan = digital_channels[1]
+            mini2p_frame_chan = digital_channels[3] #TR23: switched Vol and Frame Chan!!
             mini2p_line_chan = digital_channels[2]
-            mini2p_vol_chan = digital_channels[3]
+            mini2p_vol_chan = digital_channels[1]
             mini2p_HARP_gate = digital_channels[0]
 
             main_track_gate_chan[-1] = 0  # TR23 - to partially save truncated recordings, set all last samples to zero
