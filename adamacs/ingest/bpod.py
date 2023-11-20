@@ -218,6 +218,7 @@ class Bpodfile(object):
                 trial_attributes_keys, allow_direct_insert=True
             )
             event.EventType.insert(event_type_keys, skip_duplicates=True)
+            event_keys = Trial.split_event_times_list(event_keys) #TR23: Split event times list if there are multiple values in a 'event_start_time' field
             event.Event.insert(
                 event_keys, allow_direct_insert=True, ignore_extra_fields=True
             )  # ignore extra trial_id
@@ -264,17 +265,11 @@ class Trial(object):
         # clean up bpod port events
         self._raw_events = self._trial_data[self._idx]["Events"]
         self._ports_in = {
-            f"bpod_{port}": value
+            # f"bpod_{port}": self._raw_events[port]  - self._states.get("WaitForPosTriggerSoftCode", [None])[1] # e.g., in_port_2: 8.3 
+            f"bpod_{port}": self._raw_events[port]  # TR23: removed subtraction of WaitForPosTriggerSoftCode from all events
             for port in self._raw_events
             if "In" in port
-            for value in (self._raw_events[port] if isinstance(self._raw_events[port], list) else [self._raw_events[port]])
         }
-        #     # f"bpod_{port}": self._raw_events[port]  - self._states.get("WaitForPosTriggerSoftCode", [None])[1] # e.g., in_port_2: 8.3 
-        #     f"bpod_{port}": self._raw_events[port]  # TR23: removed subtraction of WaitForPosTriggerSoftCode from all events
-        #     for port in self._raw_events
-        #     if "In" in port
-        # }
-            
 
     @property
     def attributes(self):
@@ -320,8 +315,22 @@ class Trial(object):
                 "bpod_drinking": self._states.get("Drinking", [None])[0] if self._states.get("Drinking", [None])[0] else None,
             }
         return self._events
+    def split_event_times_list(event_keys_list):
+        new_event_keys_list = []
 
+        for entry in event_keys_list:
+            event_start_time = entry['event_start_time']
+            if isinstance(event_start_time, np.ndarray):
+                # Split the entry for each value in the NumPy array
+                for time in event_start_time:
+                    new_entry = entry.copy()
+                    new_entry['event_start_time'] = time
+                    new_event_keys_list.append(new_entry)
+            else:
+                # Keep the entry as is
+                new_event_keys_list.append(entry)
 
+        return new_event_keys_list
 # --------------------- HELPER LOADER FUNCTIONS -----------------
 
 # matlab script exact translation
