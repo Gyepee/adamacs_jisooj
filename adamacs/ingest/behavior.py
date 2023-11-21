@@ -34,6 +34,45 @@ def get_timestamps(data, sr, thr=1):
     timestamps = idc / sr
     return timestamps
 
+def get_timestamps_from_plateaus(data, sr, threshold=0.1, min_duration=10):
+    """
+    Find plateaus in a signal, round their average values to 0.1, and exclude plateaus around zero.
+
+    Parameters:
+    - data: The input signal (numpy array).
+    - threshold: The maximum allowed deviation within a plateau and the range around zero to exclude.
+    - min_duration: The minimum duration (in samples) for a segment to be considered a plateau.
+
+    Returns:
+    - A list of tuples, each tuple containing the start, end indices, and rounded average value of a plateau.
+    """
+    plateaus = []
+    start_idx = None
+    for i in range(1, len(data)):
+        if start_idx is None and abs(data[i] - data[i - 1]) <= threshold:
+            start_idx = i - 1  # potential start of a plateau
+        elif start_idx is not None and abs(data[i] - data[i - 1]) > threshold:
+            if i - start_idx >= min_duration:
+                average_value = np.mean(data[start_idx:i])
+                # Exclude plateaus around zero and round the average value
+                if abs(average_value) > threshold:
+                    rounded_value = round(average_value, 1)
+                    plateaus.append((start_idx, i - 1, rounded_value))  # end of a plateau
+            start_idx = None  # reset for next potential plateau
+
+    # Check if the last segment is a plateau
+    if start_idx is not None and len(data) - start_idx >= min_duration:
+        average_value = np.mean(data[start_idx:])
+        # Exclude plateaus around zero and round the average value
+        if abs(average_value) > threshold:
+            rounded_value = round(average_value, 1)
+            plateaus.append((start_idx, len(data) - 1, rounded_value))
+
+    idc = np.array([[t[0], t[1]] for t in plateaus]).flatten()
+    timestamps = idc / sr
+    return timestamps
+
+
 def prepare_timestamps(ts, session_key, scan_key, event_type):
     """Prepares timestamps for insert with datajoint"""
     ts_chan_start = ts[0::2]
@@ -236,7 +275,7 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
             # bpod_speed_chan[-1] = 0
 
             ts_cam_trigger = get_timestamps(cam_trigger, sr)
-            ts_bonsai_vis = get_timestamps(bonsai_vis_chan, sr)
+            ts_bonsai_vis = get_timestamps_from_plateaus(bonsai_vis_chan, sr)
             # ts_bpod_speed = get_timestamps(bpod_speed_chan, sr) #TR23: Data channel! Not Event channel!
             
             # Insert timestamps into tables             
@@ -306,10 +345,12 @@ def get_and_ingest_trial_times(scan_key, aux_setup_type):
         # Extract Trials 
         
             
-        stims_per_trial = len(set((event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_type")))
-        # all_stims = (event.Event & scan_key & 'event_type LIKE "%;%"').fetch("event_type")
+        # stims_per_trial = len(set((event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_type")))
+        all_stims = (event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_type")
         # trial_stims = {x: list(all_stims).count(x) for x in all_stims}
-        # trials = set([list(all_stims).count(x) for x in all_stims])
+        trials = set([list(all_stims).count(x) for x in all_stims])
+        stims_per_trial = int(len(all_stims) / min(trials))
+
         
         trial_start_edges = (event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_start_time",order_by = "event_start_time")[::stims_per_trial] 
         trial_end_edges = (event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_end_time",order_by = "event_end_time")[stims_per_trial-1::stims_per_trial]     

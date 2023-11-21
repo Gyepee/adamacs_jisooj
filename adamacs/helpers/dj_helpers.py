@@ -70,7 +70,7 @@ def get_subject_key_from_dir(string):
     return result
 
 def get_date_key_from_dir(directory):
-    return directory.split("_")[-1]
+    return directory.split("_")[-3]
 
 def get_scan_key_from_dir(string):
     result = [re.search(r'scan\S+_', item).group(0)[:-1] for item in string]

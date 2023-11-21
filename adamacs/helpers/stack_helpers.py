@@ -142,3 +142,61 @@ def make_stack_movie(running_z_projection, filename, fpsset=120, p1set=1, p2set=
 
     return rescaled_image_8bit
 
+
+def make_runninaverage_movie(curation_key):
+    # params_key = (imaging.ProcessingParamSet & 'paramset_idx = "4"').fetch('KEY')
+    # reg_tiffs_available = (imaging.ProcessingParamSet & params_key).fetch("params")[0]['reg_tif']
+    from scipy.ndimage import mean
+    import tifffile
+    path = (scan.ScanPath & curation_key).fetch1("path") + ("/suite2p/plane0/reg_tif")
+
+    # path = '/datajoint-data/data/jisooj/RN_OPI-1681_2023-02-15_scan9FGLEFJ3_sess9FGLEFJ3/suite2p_exp9FGLEFJ3/suite2p/plane0/reg_tif'
+    # Get a list of all tiff files in the folder
+    tiff_files = [os.path.join(path, f) for f in natsorted(os.listdir(path)) if f.endswith('.tif')]
+
+    # print(tiff_files)
+
+    # Load each tiff stack into a list of numpy arrays
+    stacks = []
+    for f in tiff_files:
+        with tifffile.TiffFile(f) as tif:
+            # Get the number of pages in the file
+            num_pages = len(tif.pages)
+            
+            # Create a numpy array to store all pages
+            stack = np.zeros((num_pages,) + tif.pages[0].shape, dtype=tif.pages[0].dtype)
+            
+            # Iterate over the pages and store them in the array
+            for i, page in enumerate(tif.pages):
+                stack[i] = page.asarray()
+
+        stacks.append(stack)
+
+    # Concatenate the stacks into a single numpy array along the z-axis
+    volume = np.concatenate(stacks, axis=0)
+
+    # delete registration tiff
+    for f in tiff_files:
+        os.remove(f) 
+    
+    ### moving average filter
+    # Create a running Z mean projection of the volume
+
+    runav = 30
+    # running_z_projection = uniform_filter_mt(volume, size=(runav,xyrunav,xyrunav))
+    running_z_projection = sh.rolling_average_filter(volume, runav)
+
+    session_id = curation_key['session_id']
+    scan_id = curation_key['scan_id']
+
+    filename = os.path.join(path, 'registered_movie_' + session_id + '_' + scan_id + '_' + str(runav) + '_frame_runningaverage2' + '.mp4')
+
+    fps = 120   # frames per second - 120 default
+    p1 = 2       # percentile scaling low - 1 default
+    p2 = 99.998  # percentile scaling high - 99.995 default
+
+    rescaled_image_8bit = sh.make_stack_movie(running_z_projection, filename, fps, p1, p2)
+
+    tmpdir = dj.config['custom'].get('suite2p_fast_tmp')[0]
+
+
