@@ -57,7 +57,7 @@ class Bpodfile(object):
         aux_paths = list(self._bpod_path_full.parent.glob("*.h5"))
         assert len(aux_paths) == 1, f"Found more than one Aux h5 file\n{aux_paths}"
         print(aux_paths[0])
-        aux = Auxfile(aux_paths[0])
+        aux = Auxfile(aux_paths[0]) #TR23: The fact that we read in the aux file again is very redundant. We should read it in once and pass it to the Bpodfile class
         aux_onset = aux.main_track_gate  # master trigger
         aux_trials = aux.bpod_channels["trial"]  # - aux_onset  # trial times wrt trigger
         aux_rewards = aux.bpod_channels["reward"] # - aux_onset  # rewards wrt trigger
@@ -69,7 +69,8 @@ class Bpodfile(object):
 
         bpod_aux_starttrial = BNC1Low_events[0][0] + 1 # +1 because we want the trial that FOLLOWS the darkframe onset because the darkframe precedes the first recorded AUX trial
 
-        self.n_trials = len(aux_trials) #TR23: Set the number of trials to the number of AUX trials
+        self.n_trials = min(self.n_trials, len(aux_trials)) #TR23: Set the number of trials to the minimum of the number of AUX trials and the number of BPOD trials
+        # self.n_trials = len(aux_trials) #TR23: Set the number of trials to the number of AUX trials
 
         # assert len(aux_trials) == self.n_trials, (
         #     "Number of trials do not match: "

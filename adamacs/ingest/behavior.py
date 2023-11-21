@@ -275,7 +275,7 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
             # bpod_speed_chan[-1] = 0
 
             ts_cam_trigger = get_timestamps(cam_trigger, sr)
-            ts_bonsai_vis = get_timestamps_from_plateaus(bonsai_vis_chan, sr)
+            ts_bonsai_vis = get_timestamps_from_plateaus(bonsai_vis_chan, sr) #TR23: changed to get_timestamps_from_plateaus to cope with non-zero ITI aux files
             # ts_bpod_speed = get_timestamps(bpod_speed_chan, sr) #TR23: Data channel! Not Event channel!
             
             # Insert timestamps into tables             
