@@ -34,6 +34,45 @@ def get_timestamps(data, sr, thr=1):
     timestamps = idc / sr
     return timestamps
 
+def get_timestamps_from_plateaus(data, sr, threshold=0.2, min_duration=1000):
+    """
+    Find plateaus in a signal, round their average values to 0.1, and exclude plateaus around zero.
+
+    Parameters:
+    - data: The input signal (numpy array).
+    - threshold: The maximum allowed deviation within a plateau and the range around zero to exclude.
+    - min_duration: The minimum duration (in samples) for a segment to be considered a plateau.
+
+    Returns:
+    - A list of tuples, each tuple containing the start, end indices, and rounded average value of a plateau.
+    """
+    plateaus = []
+    start_idx = None
+    for i in range(1, len(data)):
+        if start_idx is None and abs(data[i] - data[i - 1]) <= threshold:
+            start_idx = i - 1  # potential start of a plateau
+        elif start_idx is not None and abs(data[i] - data[i - 1]) > threshold:
+            if i - start_idx >= min_duration:
+                average_value = np.mean(data[start_idx:i])
+                # Exclude plateaus around zero and round the average value
+                if abs(average_value) > threshold:
+                    rounded_value = round(average_value, 1)
+                    plateaus.append((start_idx, i - 1, rounded_value))  # end of a plateau
+            start_idx = None  # reset for next potential plateau
+
+    # Check if the last segment is a plateau
+    if start_idx is not None and len(data) - start_idx >= min_duration:
+        average_value = np.mean(data[start_idx:])
+        # Exclude plateaus around zero and round the average value
+        if abs(average_value) > threshold:
+            rounded_value = round(average_value, 1)
+            plateaus.append((start_idx, len(data) - 1, rounded_value))
+
+    idc = np.array([[t[0], t[1]] for t in plateaus]).flatten()
+    timestamps = idc / sr
+    return timestamps
+
+
 def prepare_timestamps(ts, session_key, scan_key, event_type):
     """Prepares timestamps for insert with datajoint"""
     ts_chan_start = ts[0::2]
@@ -119,14 +158,14 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
         numberDI = len(curr_aux['header']['DIChannelNames'])
         timebase = np.arange(curr_aux[sweep]['analogScans'].shape[1]) / sr
 
-        if aux_setup_type == "mini2p1_openfield":
+        if aux_setup_type == "mini2p1_openfield" or aux_setup_type == "openfield":
             # DIGITAL SIGNALS
             digital_channels = demultiplex(curr_aux[sweep]['digitalScans'][0], numberDI)
             main_track_gate_chan = digital_channels[5]
             shutter_chan = digital_channels[4]
-            mini2p_frame_chan = digital_channels[1]
+            mini2p_frame_chan = digital_channels[3] #TR23: switched Vol and Frame Chan!!
             mini2p_line_chan = digital_channels[2]
-            mini2p_vol_chan = digital_channels[3]
+            mini2p_vol_chan = digital_channels[1]
             mini2p_HARP_gate = digital_channels[0]
 
             main_track_gate_chan[-1] = 0  # TR23 - to partially save truncated recordings, set all last samples to zero
@@ -236,7 +275,7 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
             # bpod_speed_chan[-1] = 0
 
             ts_cam_trigger = get_timestamps(cam_trigger, sr)
-            ts_bonsai_vis = get_timestamps(bonsai_vis_chan, sr)
+            ts_bonsai_vis = get_timestamps_from_plateaus(bonsai_vis_chan, sr) #TR23: changed to get_timestamps_from_plateaus to cope with non-zero ITI aux files
             # ts_bpod_speed = get_timestamps(bpod_speed_chan, sr) #TR23: Data channel! Not Event channel!
             
             # Insert timestamps into tables             
@@ -259,7 +298,7 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
                 j += 2
             
             if len(vis_stim_event_list) != ts_bonsai_vis.size / 2:
-                print('Aux-File und StimLog have not the same number of stimulus onsets!')
+                print('Aux-File und StimLog have not the same number of stimulus onsets! CHECK THAT!')
             #     print('Attempting repair - THIS IS A HACK! ARTIFICIALLY INTRODUCING STIMULUS ENDINGS IN FILE! MAKE SURE TO CRRECT THAT DURING ACQ!')
                 
             #     ITI = np.sort(np.unique(np.round(np.diff(ts_bonsai_vis))))[1] #find stim duration
@@ -306,10 +345,12 @@ def get_and_ingest_trial_times(scan_key, aux_setup_type):
         # Extract Trials 
         
             
-        stims_per_trial = len(set((event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_type")))
-        # all_stims = (event.Event & scan_key & 'event_type LIKE "%;%"').fetch("event_type")
+        # stims_per_trial = len(set((event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_type")))
+        all_stims = (event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_type")
         # trial_stims = {x: list(all_stims).count(x) for x in all_stims}
-        # trials = set([list(all_stims).count(x) for x in all_stims])
+        trials = set([list(all_stims).count(x) for x in all_stims])
+        stims_per_trial = int(len(all_stims) / min(trials))
+
         
         trial_start_edges = (event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_start_time",order_by = "event_start_time")[::stims_per_trial] 
         trial_end_edges = (event.Event & scan_key_key & 'event_type LIKE "%;%"').fetch("event_end_time",order_by = "event_end_time")[stims_per_trial-1::stims_per_trial]     

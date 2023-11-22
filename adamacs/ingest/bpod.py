@@ -32,6 +32,7 @@ class Bpodfile(object):
         self.trial_data = self.session_data["RawEvents"]["Trial"]
         self.n_trials = self.session_data["nTrials"]
         self.subject_id = self.session_data["CurrentSubjectName"]
+        self.trial_starts = self.session_data["TrialStartTimestamp"] #TR23
         self.start_time = parser.parse(
             self.session_data["Info"]["SessionDate"]  # format: 18-Mar-2022
             + " "
@@ -56,15 +57,26 @@ class Bpodfile(object):
         aux_paths = list(self._bpod_path_full.parent.glob("*.h5"))
         assert len(aux_paths) == 1, f"Found more than one Aux h5 file\n{aux_paths}"
         print(aux_paths[0])
-        aux = Auxfile(aux_paths[0])
+        aux = Auxfile(aux_paths[0]) #TR23: The fact that we read in the aux file again is very redundant. We should read it in once and pass it to the Bpodfile class
         aux_onset = aux.main_track_gate  # master trigger
         aux_trials = aux.bpod_channels["trial"]  # - aux_onset  # trial times wrt trigger
         aux_rewards = aux.bpod_channels["reward"] # - aux_onset  # rewards wrt trigger
-        assert len(aux_trials) == self.n_trials, (
-            "Number of trials do not match: "
-            + f"BPod {self.n_trials} vs. Aux {len(aux_trials)}"
-        )
-        return aux_trials, aux_rewards
+
+        #TR23: BPod cam start earlier and end later than actual recording. We need to find the first and last BPOD trial that has a valid timestamp
+        #Problem: BNClow does not seem to be in all recordings.
+        trials = self.trial_data
+        BNC1Low_events = [(i, trial['Events'].get('BNC12Low')) for i, trial in enumerate(trials) if 'BNC1Low' in trial['Events']] # get all trials that have a BNC1Low event. Returns a list of tuples (trial number, event time)
+
+        bpod_aux_starttrial = BNC1Low_events[0][0] + 1 # +1 because we want the trial that FOLLOWS the darkframe onset because the darkframe precedes the first recorded AUX trial
+
+        self.n_trials = min(self.n_trials, len(aux_trials)) #TR23: Set the number of trials to the minimum of the number of AUX trials and the number of BPOD trials
+        # self.n_trials = len(aux_trials) #TR23: Set the number of trials to the number of AUX trials
+
+        # assert len(aux_trials) == self.n_trials, (
+        #     "Number of trials do not match: "
+        #     + f"BPod {self.n_trials} vs. Aux {len(aux_trials)}"
+        # )
+        return aux_trials, aux_rewards,
 
     def ingest(self, session_id, scan_id, prompt=False):
         """Ingest BPod data to session, event, and trial tables.
@@ -85,14 +97,10 @@ class Bpodfile(object):
             PyratIngestion().ingest_animal(self.subject_id)
 
         # ------------------------------- Some constants -------------------------------
-        # TR23: this will not work. We do not use a numeric session_id. TODO: change to SessionHash (to get from imaging - or redo)
-
-        # session_id = (  # increment previous session id by 1
-        #     dj.U().aggr(session.Session, n="max(session_id)").fetch("n") or 0
-        # ) + 1
         
         bpod_version = self.session_data["Info"]["StateMachineVersion"].split(" ")[-1]
         aux_trials, aux_rewards = self._aux_timestamps()
+        
 
         # ------------------------------- Keys to insert -------------------------------
         session_key = {
@@ -119,10 +127,8 @@ class Bpodfile(object):
         trial_type_keys = [
             {
                 "trial_type": trial_type
-                for trial_type in np.unique(
-                    self.session_data["TrialTypeNames"]
-                ).tolist()
             }
+            for trial_type in np.unique(self.session_data["TrialTypeNames"]).tolist()
         ]
         trial_keys = [
             {
@@ -130,8 +136,8 @@ class Bpodfile(object):
                 "scan_id": scan_id,
                 "trial_id": n,
                 "trial_type": self.trial(n).type,
-                "trial_start_time": aux_trials[n] + self.trial(n).events['bpod_cue'],     #TR23: Update to cue onset time! has to be taken 
-                "trial_stop_time": aux_trials[n] + self.trial(n).events['bpod_cue'] + self.trial(n).duration,
+                "trial_start_time": aux_trials[n] - self.trial(n).events['bpod_at_target'],     #TR23: aux start time is equivalent to bpod_at_target
+                "trial_stop_time": aux_trials[n] - self.trial(n).events['bpod_at_target'] + self.trial(n).duration, #TR23: removed - self.trial(n).events['bpod_cue'] because it was already subtracted above
             }
             for n in range(self.n_trials)
         ]
@@ -164,7 +170,7 @@ class Bpodfile(object):
                 "scan_id": scan_id,
                 "trial_id": n,
                 "event_type": event,
-                "event_start_time": aux_trials[n] + event_start,
+                "event_start_time": aux_trials[n] - self.trial(n).events['bpod_at_target'] + event_start, #TR23: subtracting bpod_at_target first since aux start time is equivalent to bpod_at_target
             }
             for n in range(self.n_trials)
             for event, event_start in self.trial(n).events.items()
@@ -208,11 +214,12 @@ class Bpodfile(object):
             event.BehaviorRecording.insert1(behavior_recording_key, skip_duplicates=True)
             event.BehaviorRecording.File.insert1(behavior_recording_fp_key, skip_duplicates=True)
             trial.TrialType.insert(trial_type_keys, skip_duplicates=True)
-            trial.Trial.insert(trial_keys, allow_direct_insert=True)
+            trial.Trial.insert(trial_keys, allow_direct_insert=True, skip_duplicates=True)
             trial.Trial.Attribute.insert(
                 trial_attributes_keys, allow_direct_insert=True
             )
             event.EventType.insert(event_type_keys, skip_duplicates=True)
+            event_keys = Trial.split_event_times_list(event_keys) #TR23: Split event times list if there are multiple values in a 'event_start_time' field
             event.Event.insert(
                 event_keys, allow_direct_insert=True, ignore_extra_fields=True
             )  # ignore extra trial_id
@@ -259,7 +266,8 @@ class Trial(object):
         # clean up bpod port events
         self._raw_events = self._trial_data[self._idx]["Events"]
         self._ports_in = {
-            f"bpod_{port}": self._raw_events[port]  - self._states.get("WaitForPosTriggerSoftCode", [None])[1] # e.g., in_port_2: 8.3
+            # f"bpod_{port}": self._raw_events[port]  - self._states.get("WaitForPosTriggerSoftCode", [None])[1] # e.g., in_port_2: 8.3 
+            f"bpod_{port}": self._raw_events[port]  # TR23: removed subtraction of WaitForPosTriggerSoftCode from all events
             for port in self._raw_events
             if "In" in port
         }
@@ -287,9 +295,14 @@ class Trial(object):
         """Returns trial events as a dict {event_type: event_time} WRT trial start"""
         if not self._events:
             self._events = {
-                "bpod_cue": self._states.get("WaitForPosTriggerSoftCode", [None])[0] - self._states.get("WaitForPosTriggerSoftCode", [None])[1],
-                "bpod_at_target": self._states.get("WaitForPosTriggerSoftCode", [None])[1] - self._states.get("WaitForPosTriggerSoftCode", [None])[1],
-                "bpod_at_port": self._time_to_port if self._states.get("Drinking", [None])[0] else None,
+                # TR23: Removed subtraction of WaitForPosTriggerSoftCode from all events
+
+                # "bpod_cue": self._states.get("WaitForPosTriggerSoftCode", [None])[0] - self._states.get("WaitForPosTriggerSoftCode", [None])[1],
+                # "bpod_at_target": self._states.get("WaitForPosTriggerSoftCode", [None])[1] - self._states.get("WaitForPosTriggerSoftCode", [None])[1],
+                # "bpod_at_port": self._time_to_port if self._states.get("Drinking", [None])[0] else None,
+                "bpod_cue": self._states.get("WaitForPosTriggerSoftCode", [None])[0],
+                "bpod_at_target": self._states.get("WaitForPosTriggerSoftCode", [None])[1],
+                "bpod_at_port": self._time_to_port if self._states.get("Drinking", [None])[0] else None,                
                 "bpod_reward": (
                     # NOTE: Now taking reward events from Aux - TR23: uncommented block to prevent foreign key constraint error
                     self._time_to_port
@@ -297,12 +310,28 @@ class Trial(object):
                     if self._states.get("Drinking", [None])[0]
                     else None
                 ),
+                # **self._ports_in,
+                # "bpod_drinking": self._states.get("Drinking", [None])[0]- self._states.get("WaitForPosTriggerSoftCode", [None])[1] if self._states.get("Drinking", [None])[0] else None,
                 **self._ports_in,
-                "bpod_drinking": self._states.get("Drinking", [None])[0]- self._states.get("WaitForPosTriggerSoftCode", [None])[1] if self._states.get("Drinking", [None])[0] else None,
+                "bpod_drinking": self._states.get("Drinking", [None])[0] if self._states.get("Drinking", [None])[0] else None,
             }
         return self._events
+    def split_event_times_list(event_keys_list):
+        new_event_keys_list = []
 
+        for entry in event_keys_list:
+            event_start_time = entry['event_start_time']
+            if isinstance(event_start_time, np.ndarray):
+                # Split the entry for each value in the NumPy array
+                for time in event_start_time:
+                    new_entry = entry.copy()
+                    new_entry['event_start_time'] = time
+                    new_event_keys_list.append(new_entry)
+            else:
+                # Keep the entry as is
+                new_event_keys_list.append(entry)
 
+        return new_event_keys_list
 # --------------------- HELPER LOADER FUNCTIONS -----------------
 
 # matlab script exact translation
