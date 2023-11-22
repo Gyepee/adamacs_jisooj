@@ -34,7 +34,7 @@ def get_timestamps(data, sr, thr=1):
     timestamps = idc / sr
     return timestamps
 
-def get_timestamps_from_plateaus(data, sr, threshold=0.1, min_duration=10):
+def get_timestamps_from_plateaus(data, sr, threshold=0.2, min_duration=1000):
     """
     Find plateaus in a signal, round their average values to 0.1, and exclude plateaus around zero.
 
@@ -298,7 +298,7 @@ def ingest_aux(session_key, scan_key, root_paths=get_imaging_root_data_dir(), au
                 j += 2
             
             if len(vis_stim_event_list) != ts_bonsai_vis.size / 2:
-                print('Aux-File und StimLog have not the same number of stimulus onsets!')
+                print('Aux-File und StimLog have not the same number of stimulus onsets! CHECK THAT!')
             #     print('Attempting repair - THIS IS A HACK! ARTIFICIALLY INTRODUCING STIMULUS ENDINGS IN FILE! MAKE SURE TO CRRECT THAT DURING ACQ!')
                 
             #     ITI = np.sort(np.unique(np.round(np.diff(ts_bonsai_vis))))[1] #find stim duration

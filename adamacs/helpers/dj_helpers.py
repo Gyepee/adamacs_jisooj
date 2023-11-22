@@ -39,7 +39,7 @@ def plot_event_trial_start_times(event_data, trial_data):
     colors = sns.husl_palette(len(event_times_by_type), h=0.5, s=0.8, l=0.7)
 
     # Plotting
-    plt.figure(figsize=(50, 8))
+    plt.figure(figsize=(50, 20))
     for i, (etype, etimes) in enumerate(event_times_by_type.items()):
         plt.eventplot(etimes, lineoffsets=i, linelengths=0.8, colors=[colors[i]], label=etype)
 
