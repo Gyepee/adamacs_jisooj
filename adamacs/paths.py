@@ -64,7 +64,16 @@ def get_scan_image_files(scan_key):
     if tiff_filepaths:
         return tiff_filepaths
     else:
-        raise FileNotFoundError(f'No tiff file found in {scan_dir}')
+        print("- - - - - - - - - ")
+        print("NO SCAN FILE FOUND")
+        print("Ingesting dummy file")
+        print("- - - - - - - - - ")
+        parent_dir = scan_dir.parent
+        tiff_filepaths = [fp.as_posix() for fp in parent_dir.glob('*scandummy.tif')]
+        return tiff_filepaths
+        # raise FileNotFoundError(f'No tiff file found in {scan_dir}')
+
+        
 
 
 def get_scan_box_files(scan_key):
