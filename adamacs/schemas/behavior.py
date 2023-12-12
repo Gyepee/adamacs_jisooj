@@ -52,7 +52,7 @@ class HarpRecording(dj.Imported):
     def make(self, key):
                 
         try:
-            bpod_path_relative = (event.BehaviorRecording.File & key).fetch1("filepath")
+            bpod_path_relative = (event.BehaviorRecording.File & key &  "filepath LIKE '%.mat%'").fetch1("filepath")
             harp_paths = list(find_full_path(
                 get_experiment_root_data_dir(), bpod_path_relative
             ).parent.glob("*IMU_harp*csv"))
@@ -60,7 +60,7 @@ class HarpRecording(dj.Imported):
 
             IMU_data = HarpLoader(harp_paths[0]).data_for_insert()
             
-            bpod_path_relative = (event.BehaviorRecording.File & key).fetch1("filepath")
+            bpod_path_relative = (event.BehaviorRecording.File & key &  "filepath LIKE '%.mat%'").fetch1("filepath")
             harp_paths = list(find_full_path(
                 get_experiment_root_data_dir(), bpod_path_relative
             ).parent.glob("*2Pframes_harp*csv"))
