@@ -108,7 +108,7 @@ class TreadmillRecording(dj.Imported):
         """
 
     def make(self, key):
-        aux_path_relative = (event.BehaviorRecording.File & key).fetch1("filepath")
+        aux_path_relative = (event.BehaviorRecording.File & key &  "filepath LIKE '%.h5%'").fetch1("filepath")
         
         curr_aux = ws.loadDataFile(filename=aux_path_relative, format_string='double' )
         sweep = [x for x in curr_aux.keys() if 'sweep' in x][0]

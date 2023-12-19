@@ -156,5 +156,10 @@ anatomical_data = [{'anatomical_location': 'V1'},
         {'anatomical_location': 'dCA1'},
         {'anatomical_location': 'DG'},
         {'anatomical_location': 'Ctx'},
+        {'anatomical_location': 'VISrl'},
+        {'anatomical_location': 'VISam'},
+        {'anatomical_location': 'VISpm'},
+        {'anatomical_location': 'VISal'},
+        {'anatomical_location': 'VISI'},
         {'anatomical_location': 'dummy'}]
 AnatomicalLocation.insert(anatomical_data, skip_duplicates=True) 
