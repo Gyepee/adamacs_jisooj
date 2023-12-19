@@ -48,7 +48,8 @@ def plot_event_trial_start_times(event_data, trial_data):
     plt.ylabel('Event/Trial Type')
     plt.title('Event and Trial Start Times Plot')
     # plt.legend()
-    plt.show()
+    # plt.show()
+    return(plt)
 
 
 def get_session_dir_key_from_dir(directory):
