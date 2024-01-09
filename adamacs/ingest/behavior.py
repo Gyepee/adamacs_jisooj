@@ -81,7 +81,8 @@ def prepare_timestamps(ts, session_key, scan_key, event_type):
     to_insert = [list(ts_chan_start), list(ts_chan_stop)]  
     to_insert = [[session_key, scan_key, event_type, *i] for i in zip(*to_insert)]  # transposes the list to get rows/cols right
     if len(to_insert) != len(ts_chan_start):
-        to_insert.append([session_key, event_type, ts_chan_start[-1], ''])
+        to_insert.append([session_key, scan_key, event_type, ts_chan_start[-1],ts_chan_start[-1]+1])
+        print("WARNING: Last event in aux file is not closed. Adding a dummy event to close it.")
 
     return to_insert
 

@@ -123,7 +123,7 @@ def rescale_image_multithreaded(running_z_projection, p1, p99):
 
 
 def make_stack_movie(running_z_projection, filename, fpsset=120, p1set=1, p2set=99.995):
-    print(filename)
+
     codecset = 'libx264'
 
     # Create an imageio VideoWriter object to write the video
