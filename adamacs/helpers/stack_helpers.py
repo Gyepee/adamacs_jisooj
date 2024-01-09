@@ -146,7 +146,7 @@ def make_stack_movie(running_z_projection, filename, fpsset=120, p1set=1, p2set=
     return rescaled_image_8bit
 
 
-def make_runninaverage_movie(path):
+def make_runningaverage_movie(path, curation_key):
     # params_key = (imaging.ProcessingParamSet & 'paramset_idx = "4"').fetch('KEY')
     # reg_tiffs_available = (imaging.ProcessingParamSet & params_key).fetch("params")[0]['reg_tif']
     from scipy.ndimage import mean
@@ -179,8 +179,8 @@ def make_runninaverage_movie(path):
     volume = np.concatenate(stacks, axis=0)
 
     # delete registration tiff
-    for f in tiff_files:
-        os.remove(f) 
+    # for f in tiff_files:
+    #     os.remove(f) 
     
     ### moving average filter
     # Create a running Z mean projection of the volume
@@ -188,6 +188,7 @@ def make_runninaverage_movie(path):
     runav = 10
     # running_z_projection = uniform_filter_mt(volume, size=(runav,xyrunav,xyrunav))
     running_z_projection = rolling_average_filter(volume, runav)
+
 
     session_id = curation_key['session_id']
     scan_id = curation_key['scan_id']
